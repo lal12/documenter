@@ -7,6 +7,7 @@ import Button from "antd/lib/button";
 import Input from "antd/lib/input";
 import Icon from "antd/lib/icon";
 import Checkbox from "antd/lib/checkbox";
+import {Link} from "react-router-dom";
 
 type tag = {
 	id: string,
@@ -26,15 +27,23 @@ type document = {
 };
 
 export default class DocsView extends React.Component{
-	state: {docs: document[]};
+	state: {docs: document[], tags: tag[]};
 	constructor(props: any){
 		super(props);
-		this.state = {docs: []};
+		this.state = {docs: [], tags: []};
 		this.refresh();
 	}
+	id2tag(id:string):tag|null{
+		let index = this.state.tags.findIndex(t=>t.id == id);
+		if(index > -1)
+			return this.state.tags[index];
+		return null;
+	}
 	refresh(){
-		httpRequest("GET", "/api/docs")
-		.then((data:any)=>{
+		httpRequest("GET", "/api/tags").then(d=>{
+			this.setState({tags: d});
+			return httpRequest("GET", "/api/docs")
+		}).then((data:any)=>{
 			data = data.map((d:document)=>({
 				...d, 
 				added: new Date(d.added),
@@ -95,8 +104,8 @@ export default class DocsView extends React.Component{
 			</Checkbox>
 			<Table dataSource={this.state.docs}>
 				<Column title="Titel" key="title" dataIndex="title" />
-				<Column key="tags" dataIndex="tags" render={tags=>tags.map((t:tag)=>(
-					<Tag key={t.id}>{t.title}</Tag>
+				<Column key="tags" dataIndex="tags" render={tags=>tags.map((t:string)=>(
+					<Tag key={t}>{(this.id2tag(t) as tag).title}</Tag>
 				))} />
 				<Column title="Erstellt" key="documentDate" dataIndex="documentDate"
 					render={d=>d.toLocaleDateString()} />
@@ -104,9 +113,9 @@ export default class DocsView extends React.Component{
 					render={d=>d.toLocaleDateString()} />
 				<Column render={(uuid,doc: document)=>{
 					return (<React.Fragment>
-						<a href={"/ui/docs/"+uuid}>
+						<Link to={"/ui/docs/"+uuid}>
 							<Button><Icon type="edit"/></Button>
-						</a>
+						</Link>
 						<a href={"/api/docs/"+uuid+"/file"}>
 							<Button><Icon type="download"/></Button>
 						</a>

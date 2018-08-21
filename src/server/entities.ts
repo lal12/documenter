@@ -43,12 +43,8 @@ export class Document extends BaseEntity{
     @ManyToOne(type=>Namespace, (ns: Namespace)=>ns.documents)
     namespace!: Namespace;
     
-    //@Index({fulltext: true})
-    @ManyToMany(type => Tag, tag=>tag.documents, {
-        eager: true
-    })
-    @JoinTable()
-    tags!: Tag[];
+    @Column({type: "simple-array"})
+    tags!: string[];
 
     //@Index({fulltext: true})
     @OneToMany(type=>MetaData, md=>md.document)
@@ -160,7 +156,4 @@ export class Tag extends BaseEntity{
     @Index({fulltext: true})
     @Column("varchar")
     title!: string;
-
-    @ManyToMany(type => Document, doc=>doc.tags)
-    documents!: Document[];
 }
