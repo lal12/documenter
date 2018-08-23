@@ -22,12 +22,14 @@ type document = {
 	added: Date,
 	modified: Date,
 	documentDate: Date,
-	filetype: string,
 	title: string,
 	tags: string[],
 	autoKeywords: string[],
 	customKeywords: string[],
-	origFilename: string
+	files: {
+		name: string,
+		uuid: string
+	}[]
 };
 
 export default class DocEditView extends React.Component<{uuid: string}>{
@@ -237,14 +239,10 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 			return null;
 		let doc = this.state.doc as document;
 
-		return(<div style={{
-			backgroundColor: "white",
-			margin: "2vw",
-			padding: "1vw"
-		}}>
+		return(<div className="content">
 			<div>
 				<h1 style={{display: "inline-block"}}>{doc.title}</h1>
-				<a href={"/api/docs/"+doc.uuid+"/file"} style={{marginLeft: "10px"}}>
+				<a href={"/api/docs/"+doc.uuid+"/files/zip"} style={{marginLeft: "10px"}}>
 					<Button>
 						<Icon type="download"/>
 					</Button>
@@ -268,8 +266,13 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 							<td><b>Titel: </b></td>
 							<td>{this.renderEditTitle(doc)}</td>
 						</tr><tr>
-							<td><b>Dateiname: </b></td>
-							<td>{doc.origFilename}</td>
+							<td><b>Dateien: </b></td>
+							<td>{doc.files.map(f=>(
+								<a href={"/api/files/"+f.uuid} 
+									style={{marginRight: "10px"}}>
+									{f.name}
+								</a>
+							))}</td>
 						</tr><tr>
 							<td><b>Dokumentendatum: </b></td>
 							<td>{this.renderEditDocDate(doc)}</td>

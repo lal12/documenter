@@ -4,7 +4,54 @@ import {Index,Entity, Column, ManyToOne,
     OneToMany,
     PrimaryColumn,
     ManyToMany,
-    JoinTable} from "typeorm";
+    JoinTable,
+    UpdateDateColumn,
+    JoinColumn} from "typeorm";
+import {Document as Document2} from "./entities";
+
+export const fileTypes :string[] = [
+    "pdf","png","jpg","txt","md","docx","xlsx","odt","ods","txt"
+];
+
+
+@Entity("file")
+export class File extends BaseEntity{
+    @PrimaryGeneratedColumn("uuid")
+    uuid!: string;
+
+    @Column("enum",{ 
+		nullable:false,
+		enum:fileTypes,
+		name:"filetype"
+    })
+    filetype!: string;
+
+    @Index({fulltext: true})
+    @Column()
+    origFilename!: string;
+
+    @ManyToOne(type=>Document,{
+        eager: true, nullable: true, onDelete: "CASCADE"
+    })
+    @JoinColumn({ name: "documentUUID" })
+    document?: Document2;
+
+    @Column("uuid", {nullable: true})
+    documentUUID?: string;
+
+    get filename(): string{
+        return this.uuid+"."+this.filetype;
+    }
+
+    public toObj(){
+        return {
+            uuid: this.uuid,
+            filetype: this.filetype,
+            origFilename: this.origFilename,
+            document: this.document ? this.document.uuid : null
+        }
+    }
+}
 
 @Entity("document")
 export class Document extends BaseEntity{
@@ -16,68 +63,79 @@ export class Document extends BaseEntity{
 	})
     added!: Date;
 
-    @CreateDateColumn({ 
+    @UpdateDateColumn({ 
 		nullable:false,
 	})
     modified!: Date;
 
-    @CreateDateColumn({ 
-		nullable:false,
+    @Column({ 
+        nullable:false,
 	})
     documentDate!: Date;
-    
-    /*@Column("enum",{ 
-		nullable:false,
-		enum:["pdf","png","jpg","txt"],
-		name:"filetype"
-    })*/
-    @Column({type: "varchar", length: 15})
-    filetype!: string;
-    
+ 
+    @OneToMany(type=>File, file=>file.document, {lazy: true})
+    files!: Promise<File[]>;
+
+    @Index({fulltext: true})
     @Column({type: "varchar", length: 40})
     title!: string;
     
-    @Column("varchar")
-    origFilename!: string;
-        
-    @ManyToOne(type=>Namespace, (ns: Namespace)=>ns.documents)
-    namespace!: Namespace;
-    
-    @Column({type: "simple-array"})
-    tags!: string[];
+    //@Column({type: "simple-array"})
+    @ManyToMany(type=>Tag, t=>t.documents, {eager: true})
+    @JoinTable()
+    tags!: Tag[];
 
-    //@Index({fulltext: true})
     @OneToMany(type=>MetaData, md=>md.document)
-    metadata!: Promise<Meta[]>;
+    metadata!: Promise<MetaData[]>;
 
-    //@Index({fulltext: true})
+    @Index({fulltext: true})
     @Column({type: "simple-array"})
     autoKeywords!: string[];
 
-    //@Index({fulltext: true})
+    @Index({fulltext: true})
     @Column({type: "simple-array"})
     customKeywords!: string[];
-    
-    get filename(): string{
-        return this.uuid+"."+this.filetype;
+
+    public async toObj(){
+        let metadata = (await this.metadata).map(md=>({
+            name: md.meta.id, type: md.meta.type, 
+            isArray: md.meta.isArray, value: md.data,
+            optional: md.meta.optional
+        }));
+        return {
+            uuid: this.uuid,
+            added: this.added,
+            modified: this.modified,
+            documentDate: this.documentDate,
+            files: (await this.files).map(f=>({name: f.origFilename, uuid: f.uuid})),
+            title: this.title,
+            tags: this.tags.map(t=>t.id),
+            metadata,
+            autoKeywords: this.autoKeywords,
+            customKeywords: this.customKeywords
+        }
     }
-}
 
-@Entity("namespace")
-export class Namespace extends BaseEntity{
-    @PrimaryColumn({
-        name: "id",
-        type: "varchar",
-        length: 20
-    })
-    id!: string;
-    
-    @Index({fulltext: true})
-    @Column("varchar")
-    title!: string;
-
-    @OneToMany(type=>Document, doc=>doc.namespace)
-    documents!: Promise<Document[]>;
+    public static async newDoc(){
+        let now = new Date();
+        let doc = new Document();
+		doc.title = "Neues Dokument";
+		doc.added = now;
+		doc.tags = [];
+		doc.autoKeywords = [];
+		doc.customKeywords = [];
+		doc.documentDate = now;
+		doc.modified = now;
+		await doc.save();
+		let meta = await Meta.find({optional: false});
+		for(let m of meta){
+			let md = new MetaData();
+			md.meta = m;
+			md.document = doc;
+			await md.save();	
+        }
+        return doc;
+    }
 }
 
 @Entity("meta")
@@ -90,25 +148,24 @@ export class Meta extends BaseEntity{
     id!: string;
     
     @Index({fulltext: true})
-    @Column("varchar")
+    @Column({type: "varchar", length: 40})
     title!: string;
 
-    @Column("boolean")
+    @Column()
     isArray!: boolean;
 
-    @Column("boolean")
+    @Column()
     optional!: boolean;
 
-    @Column("boolean")
+    @Column()
     deleteable!: boolean;
 
-    /*@Column("enum",{ 
+    @Column("enum",{ 
 		nullable:false,
 		enum:["date","string","uint","int","decimal"],
 		name:"type"
-    })*/
-    @Column({type: "varchar", length: 15})
-	type!: string;
+    })
+	type!: "date"|"string"|"uint"|"int"|"decimal";
 
     @OneToMany(type=>MetaData, md=>md.meta)
     metadatas!: Promise<MetaData[]>;
@@ -134,8 +191,8 @@ export class MetaData extends BaseEntity{
     @PrimaryGeneratedColumn("increment", {name: "id"})
     id!: number;
     
-    @Column({type: "varchar", length: 30})
-    data!: string;
+    @Column({type: "varchar", length: 30, nullable: true})
+    data?: string;
 
     @ManyToOne(type=>Document)
     document!: Document;
@@ -156,4 +213,7 @@ export class Tag extends BaseEntity{
     @Index({fulltext: true})
     @Column("varchar")
     title!: string;
+
+    @ManyToMany(type=>Document, d=>d.tags, {lazy: true})
+    documents!: Promise<Document[]>;
 }

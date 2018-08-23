@@ -7,7 +7,7 @@ import Button from "antd/lib/button";
 import Input from "antd/lib/input";
 import Icon from "antd/lib/icon";
 import Checkbox from "antd/lib/checkbox";
-import {Link} from "react-router-dom";
+import {Link, withRouter} from "react-router-dom";
 
 type tag = {
 	id: string,
@@ -26,9 +26,10 @@ type document = {
 	customKeywords: string[]
 };
 
-export default class DocsView extends React.Component{
+type DocsProps = {match: any, location: any, history: any};
+class DocsView extends React.Component<DocsProps>{
 	state: {docs: document[], tags: tag[]};
-	constructor(props: any){
+	constructor(props: DocsProps){
 		super(props);
 		this.state = {docs: [], tags: []};
 		this.refresh();
@@ -65,9 +66,9 @@ export default class DocsView extends React.Component{
 	}
 	onFileUpload(e: React.ChangeEvent<HTMLInputElement>){
 		if(e.target.files){
-			let file = e.target.files[0];
+			let files = e.target.files;
 			let formData = new FormData();
-			formData.append('file', file);
+			Array.from(files).forEach(f=>formData.append("files", f));
 			new Promise<any>((res,rej)=>{
 				let xhr = new XMLHttpRequest();
 				xhr.addEventListener("load", ()=>{
@@ -82,23 +83,19 @@ export default class DocsView extends React.Component{
 						}
 					}
 				})
-				xhr.open("POST", "/api/docs/new", true);
+				xhr.open("POST", "/api/docs/upload", true);
 				xhr.send(formData);
 			}).then(d=>{
-				window.location.href = "/ui/docs/"+d.uuid; 
+				this.props.history.push("/ui/docs/"+d.uuid)
 			})
 		}
 	}
 	render(){
-		return(<div style={{
-			backgroundColor: "white",
-			margin: "2vw",
-			padding: "1vw"
-		}}>
+		return(<div className="content">
 			<h1>Dokumente</h1>
 			<Input type="file" hidden={true} 
 				ref="fileinput" onChange={e=>this.onFileUpload(e)} />
-			<Button type="primary" onClick={()=>this.addDoc()}>Hinzufügen</Button>
+			<Button type="primary" onClick={()=>this.addDoc()}>Dokument hochladen</Button>
 			<Checkbox checked={true} style={{marginLeft: "10px"}}>
 				Texterkennung für Bildinhalte aktivieren
 			</Checkbox>
@@ -130,5 +127,7 @@ export default class DocsView extends React.Component{
 			</Table>
 		</div>);
 	}
-
 }
+
+const DocsViewRouter = withRouter(DocsView)
+export default DocsViewRouter;

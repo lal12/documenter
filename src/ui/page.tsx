@@ -8,6 +8,7 @@ import MetaView from "./meta-view";
 import TagView from "./tag-view";
 import DocsView from "./docs-view";
 import DocEditView from "./doc-edit-view";
+import InboxView from "./inbox-view";
 
 class AppMenu extends React.Component<{location: any}>{
 	render(){
@@ -16,6 +17,11 @@ class AppMenu extends React.Component<{location: any}>{
 				<Menu.Item key="/ui/docs">
 					<NavLink to="/ui/docs">
 						Dokumente
+					</NavLink>
+				</Menu.Item>
+				<Menu.Item key="/ui/inbox">
+					<NavLink to="/ui/inbox">
+						Inbox
 					</NavLink>
 				</Menu.Item>
 				<Menu.Item key="/ui/tags">
@@ -47,6 +53,7 @@ class App extends React.Component{
 						return (<DocEditView uuid={ri.match.params.uuid as string} />);
 					}} />
 					<Route path="/ui/docs" exact component={DocsView} />
+					<Route path="/ui/inbox" exact component={InboxView} />
 					<Route path="/ui/tags" exact component={TagView} />
 					<Route path="/ui/meta" exact component={MetaView} />
 				</Layout.Content>
