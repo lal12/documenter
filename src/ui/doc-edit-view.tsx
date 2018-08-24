@@ -24,8 +24,7 @@ type document = {
 	documentDate: Date,
 	title: string,
 	tags: string[],
-	autoKeywords: string[],
-	customKeywords: string[],
+	keywords: string[],
 	files: {
 		name: string,
 		uuid: string
@@ -66,17 +65,10 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 		if(doc){
 			let docPart = {
 				title: doc.title,
-				customKeywords: doc.customKeywords,
 				documentDate: doc.documentDate,
 				tags: doc.tags
 			}
 			httpRequest("PUT", "/api/docs/"+doc.uuid, docPart).then(()=>this.refresh());
-		}
-	}
-	saveKeywords(keywords:string){
-		if(this.state.doc){
-			this.state.doc.customKeywords = keywords.split(",").map(s=>s.trim());
-			this.save();
 		}
 	}
 	saveTitle(title:string){
@@ -127,40 +119,6 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 					<Button onClick={abort} 
 						style={{display: "table-cell"}}
 						type="danger" 
-					>
-						<Icon type="close" />
-					</Button>
-				</React.Fragment>
-			)}
-		/>);
-	}
-	renderEditKeywords(doc: document){
-		return(<EditInput<string>
-			initValue={doc.customKeywords.join(",")}
-			onSave={(v)=>this.saveKeywords(v)}
-			renderDisplay={(v: string, edit: ()=>void)=>(
-				<React.Fragment>
-					{v}
-					<Button onClick={edit}
-						style={{marginLeft: "6px"}}
-						type="primary" size="small"
-					>
-						<Icon type="edit" />
-					</Button>
-				</React.Fragment>
-			)} 
-			renderEdit={(v: string, save: ()=>void, abort: ()=>void, change:(v:string)=>void)=>(
-				<React.Fragment>
-					<Input.TextArea style={{width: "auto"}}
-						value={v} onChange={(e)=>change(e.target.value)}
-					/><br />
-					<Button onClick={save}  
-						style={{display: "table-cell"}} type="primary" 
-					>
-						<Icon type="save" />
-					</Button>
-					<Button onClick={abort} 
-						style={{display: "table-cell"}} type="danger" 
 					>
 						<Icon type="close" />
 					</Button>
@@ -284,7 +242,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 							<td>{doc.modified.toLocaleString()}</td>
 						</tr><tr>
 							<td><b>Keywords: </b></td>
-							<td>{this.renderEditKeywords(doc)}</td>
+							<td>{this.state.doc.keywords.join(", ")}</td>
 						</tr><tr>
 							<td><b>Tags: </b></td>
 							<td>{this.renderEditTags(doc)}</td>

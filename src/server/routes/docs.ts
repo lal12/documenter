@@ -6,6 +6,7 @@ import * as Util from "util";
 import * as Path from "path";
 import * as FS from "fs";
 import * as Multer from "multer";
+import { textFromFile, keywordsFromText, insertNonExistingKeywords } from "../keywords";
 
 export default function init(app: Express, jsonParser: NextHandleFunction, filePath: string, upload: Multer.Instance){
     // Document methods
@@ -33,7 +34,6 @@ export default function init(app: Express, jsonParser: NextHandleFunction, fileP
 		}
 		let {value, error} = JOI.object({
 			title: JOI.string().min(1).required(),
-			customKeywords: JOI.array().items(JOI.string()).required(),
 			documentDate: JOI.date().iso().required(),
 			tags: JOI.array().items(JOI.string()).required(),
 		}).validate(req.body);
@@ -50,7 +50,6 @@ export default function init(app: Express, jsonParser: NextHandleFunction, fileP
 			doc.tags.push(tag);
 		}
 		value.documentDate = new Date(value.documentDate);
-		doc.customKeywords = value.customKeywords;
 		doc.documentDate = value.documentDate;
 		await doc.save();
 		res.end();
@@ -66,16 +65,19 @@ export default function init(app: Express, jsonParser: NextHandleFunction, fileP
 			}
 		}
 		let doc = await Document.newDoc();
-		let promises = files.map(f=>{
+		let promises = files.map(async f=>{
 			let dbFile = new File();
 			dbFile.document = doc;
 			dbFile.origFilename = f.originalname;
 			dbFile.filetype = Path.extname(f.originalname).substr(1).toLowerCase() as any;
-			return dbFile.save().then(dbFile=>{
-				return Util.promisify(FS.rename)(f.path, Path.join(filePath, dbFile.filename));
-			})
+			await dbFile.save()
+			await Util.promisify(FS.rename)(f.path, Path.join(filePath, dbFile.filename));
+			let text = await textFromFile(Path.join(filePath, dbFile.filename), dbFile.origFilename);
+			let kw = keywordsFromText(text);
+			dbFile.keywords = await insertNonExistingKeywords(kw);
+			await dbFile.save();
 		});
-		await Promise.all(promises);
+		let kws = await Promise.all(promises);
 		res.json(await doc.toObj()).end()
 	})
 	app.post("/api/docs/inbox", jsonParser, async (req, res)=>{

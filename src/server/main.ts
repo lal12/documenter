@@ -3,7 +3,7 @@ import * as Path from "path";
 import * as FS from "fs";
 import {createConnection, TableForeignKey} from "typeorm";
 import * as Util from "util";
-import { Tag, Document, Meta, MetaData, fileTypes, File } from "./entities";
+import { Tag, Document, Meta, MetaData, File, Keyword} from "./entities";
 import * as JOI from "joi";
 import * as bodyParser from "body-parser";
 import * as Multer from "multer";
@@ -39,7 +39,7 @@ async function init(){
 		username: CONFIG.mysql.user,
 		password: CONFIG.mysql.password,
 		synchronize: true,
-		entities: [Tag, Document, Meta, MetaData, File],
+		entities: [Tag, Document, Meta, MetaData, File, Keyword],
 	});
 
 	// Initialize db

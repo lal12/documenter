@@ -39,6 +39,10 @@ export class File extends BaseEntity{
     @Column("uuid", {nullable: true})
     documentUUID?: string;
 
+    @ManyToMany(type=>Keyword, kw=>kw.files, {eager: true})
+    @JoinTable()
+    keywords!: Keyword[];
+
     get filename(): string{
         return this.uuid+"."+this.filetype;
     }
@@ -48,9 +52,22 @@ export class File extends BaseEntity{
             uuid: this.uuid,
             filetype: this.filetype,
             origFilename: this.origFilename,
-            document: this.document ? this.document.uuid : null
+            document: this.document ? this.document.uuid : null,
+            keywords: this.keywords.map(kw=>kw.keyword)
         }
     }
+}
+
+@Entity("keyword")
+export class Keyword extends BaseEntity{
+    @PrimaryGeneratedColumn("increment")
+    id!: number;
+
+    @Column()
+    keyword!: string;
+
+    @ManyToMany(type=>File, f=>f.keywords, {lazy: true})
+    files!: Promise<File[]>;
 }
 
 @Entity("document")
@@ -80,7 +97,6 @@ export class Document extends BaseEntity{
     @Column({type: "varchar", length: 40})
     title!: string;
     
-    //@Column({type: "simple-array"})
     @ManyToMany(type=>Tag, t=>t.documents, {eager: true})
     @JoinTable()
     tags!: Tag[];
@@ -88,31 +104,29 @@ export class Document extends BaseEntity{
     @OneToMany(type=>MetaData, md=>md.document)
     metadata!: Promise<MetaData[]>;
 
-    @Index({fulltext: true})
-    @Column({type: "simple-array"})
-    autoKeywords!: string[];
-
-    @Index({fulltext: true})
-    @Column({type: "simple-array"})
-    customKeywords!: string[];
-
     public async toObj(){
         let metadata = (await this.metadata).map(md=>({
             name: md.meta.id, type: md.meta.type, 
             isArray: md.meta.isArray, value: md.data,
             optional: md.meta.optional
         }));
+        let files = await this.files;
+        let keywords : string[] = [];
+        await Promise.all(files.map(async f=>{
+            await f.reload();
+            keywords = keywords.concat(f.keywords.map(kw=>kw.keyword));
+        }))
+        let file = await File.findOne({uuid: files[0].uuid})
         return {
             uuid: this.uuid,
             added: this.added,
             modified: this.modified,
             documentDate: this.documentDate,
-            files: (await this.files).map(f=>({name: f.origFilename, uuid: f.uuid})),
+            files: files.map(f=>({name: f.origFilename, uuid: f.uuid})),
             title: this.title,
             tags: this.tags.map(t=>t.id),
             metadata,
-            autoKeywords: this.autoKeywords,
-            customKeywords: this.customKeywords
+            keywords
         }
     }
 
@@ -122,8 +136,6 @@ export class Document extends BaseEntity{
 		doc.title = "Neues Dokument";
 		doc.added = now;
 		doc.tags = [];
-		doc.autoKeywords = [];
-		doc.customKeywords = [];
 		doc.documentDate = now;
 		doc.modified = now;
 		await doc.save();
@@ -191,6 +203,9 @@ export class MetaData extends BaseEntity{
     @PrimaryGeneratedColumn("increment", {name: "id"})
     id!: number;
     
+    @Column({nullable: true})
+    index?: number;
+
     @Column({type: "varchar", length: 30, nullable: true})
     data?: string;
 

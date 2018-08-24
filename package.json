@@ -40,6 +40,8 @@
     "mysql": "^2.16.0",
     "reflect-metadata": "^0.1.12",
     "sqlite3": "^4.0.2",
-    "typeorm": "^0.2.7"
+    "textract": "^2.4.0",
+    "typeorm": "^0.2.7",
+    "wink-tokenizer": "^4.0.0"
   }
 }
