@@ -3,25 +3,43 @@ import * as React from "react";
 import Button from "antd/lib/button";
 import Icon from "antd/lib/icon";
 import Tabs from "antd/lib/tabs";
-import Form from "antd/lib/form";
+import Moment from "moment";
 import Input from "antd/lib/input";
 import DateTime from "react-datetime";
-import {EditInput} from "./edit-input"
+import {EditInput, EditTextInput, EditNumberInput, EditDateInput, EditDateTimeInput} from "./edit-input"
 import Tag from "antd/lib/tag";
 import Select from "react-select";
+import Divider from "antd/lib/divider";
 
-
+import {intl} from "../lang/intl";
 
 type tag = {
 	id: string,
 	title: string
 }
 
-type document = {
+interface metadata{
+	id: string,
+	title: string,
+	type: string,
+	optional: boolean,
+	isArray: boolean,
+	value?: string|string[]
+}
+interface metadataArray extends metadata{
+	isArray: true,
+	value: string[]
+}
+interface metadataSingle extends metadata{
+	isArray: false,
+	value: string
+}
+interface document{
 	uuid: string,
 	added: Date,
 	modified: Date,
 	documentDate: Date,
+	metadata: metadata[],
 	title: string,
 	tags: string[],
 	keywords: string[],
@@ -30,6 +48,66 @@ type document = {
 		uuid: string
 	}[]
 };
+
+function strToVal(val: string, type: string): string|number|Date{
+	switch(type){
+		case "string":
+			return val;
+		case "uint":
+		case "int":
+			return parseInt(val);
+		case "decimal":
+			return parseFloat(val);
+		case "date":
+		case "datetime":
+			return new Date(val);
+		default:
+			throw new Error("Unknown type: "+type);
+	}
+}
+
+class EditMetadataArray extends React.Component<{md: metadataArray}>{
+
+}
+
+class EditMetadata extends React.Component<{
+	md: metadataSingle, 
+	onSave?: (v:string|number|Date)=>void
+}>{
+	save(value: string|number|Date){
+		if(this.props.onSave){
+			this.props.onSave(value);
+		}
+	}
+	render(){
+		let md = this.props.md;
+		let val = strToVal(md.value, md.type);
+		if(md.type == "string"){
+			return <EditTextInput 
+				initValue={md.value} 
+				label="" type="string"
+				onSave={v=>this.save(v)} />;
+		}else if(md.type == "uint" || md.type == "int" || md.type == "decimal"){
+			let min, step;
+			if(md.type == "uint")
+				min = 0;
+			if(md.type == "int" || md.type == "uint")
+				step = 1;
+			return <EditNumberInput  
+				initValue={val as number} 
+				min={min} step={step} 
+				onSave={v=>this.save(v)} />;
+		}else if(md.type == "date"){
+			return <EditDateInput 
+				initValue={Moment(val)} 
+				onSave={v=>this.save(v.toDate())} />
+		}else if(md.type == "datetime"){
+			return <EditDateTimeInput 
+				initValue={Moment(val)}
+				onSave={v=>this.save(v.toDate())} />
+		}
+	}
+}
 
 export default class DocEditView extends React.Component<{uuid: string}>{
 	state: {doc: document|null, tags: tag[]};
@@ -63,10 +141,14 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 	save(){
 		let doc = this.state.doc;
 		if(doc){
+			let metadata : {[index:string]:string|string[]} = {};
+			for(let m of doc.metadata)
+				metadata[m.id] = m.value!;
 			let docPart = {
 				title: doc.title,
 				documentDate: doc.documentDate,
-				tags: doc.tags
+				tags: doc.tags,
+				metadata
 			}
 			httpRequest("PUT", "/api/docs/"+doc.uuid, docPart).then(()=>this.refresh());
 		}
@@ -86,6 +168,12 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 	saveTags(tags:string[]){
 		if(this.state.doc){
 			this.state.doc.tags = tags;
+			this.save();
+		}
+	}
+	saveAttribute(md: metadata, i: number){
+		if(this.state.doc){
+			this.state.doc.metadata[i] = md;
 			this.save();
 		}
 	}
@@ -125,6 +213,24 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 				</React.Fragment>
 			)}
 		/>);
+	}
+	renderAttribute(md: metadata, i:number){
+		if(!md.isArray){
+			return <tr>
+				<td><b>{md.title+": "}</b></td>
+				<td>
+				<EditMetadata 
+					md={md as metadataSingle}
+					onSave={(v:Date|number|string)=>{
+						if(v instanceof Date)
+							v = v.toISOString();
+						else
+							v = v.toString();
+						this.saveAttribute({...md, value: v}, i)}
+					} />
+				</td>
+			</tr>;
+		}
 	}
 	renderEditDocDate(doc: document){
 		return(<EditInput<string>
@@ -207,7 +313,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 				</a>
 				<Button type="danger" style={{marginLeft: "10px"}}
 					onClick={()=>{
-						if(confirm("Wirklich das Dokument '"+doc.title+"' löschen?")){
+						if(confirm(intl.get("doc_confirm_del", doc))){
 							httpRequest("DELETE", "/api/docs/"+doc.uuid).then(()=>{
 								window.location.href = "/ui/docs";
 							})
@@ -218,13 +324,13 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 				</Button>
 			</div>
 			<Tabs defaultActiveKey="1">
-				<Tabs.TabPane tab="Übersicht" key="1">
+				<Tabs.TabPane tab={intl.get("details")} key="1">
 					<table style={{overflow: "visible"}}><tbody>
 						<tr>
-							<td><b>Titel: </b></td>
+							<td><b>{intl.get("title")}: </b></td>
 							<td>{this.renderEditTitle(doc)}</td>
 						</tr><tr>
-							<td><b>Dateien: </b></td>
+							<td><b>{intl.get("files")}: </b></td>
 							<td>{doc.files.map(f=>(
 								<a href={"/api/files/"+f.uuid} 
 									style={{marginRight: "10px"}}>
@@ -232,24 +338,29 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 								</a>
 							))}</td>
 						</tr><tr>
-							<td><b>Dokumentendatum: </b></td>
+							<td><b>{intl.get("created")}: </b></td>
 							<td>{this.renderEditDocDate(doc)}</td>
 						</tr><tr>
-							<td><b>Hinzugefügt am: </b></td>
-							<td>{doc.added.toLocaleString()}</td>
+							<td><b>{intl.get("added")}: </b></td>
+							<td>{intl.datetime(doc.added)}</td>
 						</tr><tr>
-							<td><b>Zuletzt Bearbeitet: </b></td>
-							<td>{doc.modified.toLocaleString()}</td>
+							<td><b>{intl.get("modified")}: </b></td>
+							<td>{intl.datetime(doc.modified)}</td>
 						</tr><tr>
-							<td><b>Keywords: </b></td>
+							<td><b>{intl.get("keywords")}: </b></td>
 							<td>{this.state.doc.keywords.join(", ")}</td>
 						</tr><tr>
-							<td><b>Tags: </b></td>
+							<td><b>{intl.get("tags")}: </b></td>
 							<td>{this.renderEditTags(doc)}</td>
 						</tr>
 					</tbody></table>
+					<Divider style={{marginTop: "15px"}} />
+					<h2>{intl.get("menu_meta")}</h2>
+					<table><tbody>
+						{this.state.doc.metadata.map((md,i)=>this.renderAttribute(md,i))}
+					</tbody></table>
 				</Tabs.TabPane>
-				<Tabs.TabPane tab="Anschauen" key="2">
+				<Tabs.TabPane tab={intl.get("view")} key="2">
 					
 				</Tabs.TabPane>
 			</Tabs>

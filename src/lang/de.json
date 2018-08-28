@@ -1,0 +1,33 @@
+{
+	"dateFormat": "DD.MM.YYYY",
+	"datetimeFormat": "DD.MM.YYYY HH:mm:ss",
+	"timeFormat": "HH:mm:ss",
+	"unknown": "(Unbekannter String)",
+	"lang": "de",
+	"strings": {
+		"menu_doc": "Dokumente",
+		"menu_inbox": "Inbox",
+		"menu_tags": "Tags",
+		"menu_meta": "Attribute",
+		"doc_upload_enable_ocr": "Texterkennung für Bildinhalte aktivieren",
+		"doc_upload": "Dokument hochladen",
+		"doc_new": "Neues Dokument",
+		"doc_meta": "Attribute",
+		"doc_confirm_del": "Wirklich das Dokument '{title}' löschen?",
+		"meta_confirm_del": "Wirklich das Attribut '{title}' und alle enthaltenen Daten löschen?",
+		"inbox_upload": "Datei hochladen",
+		"title": "Titel",
+		"created": "Erstellt",
+		"added": "Hinzugefügt",
+		"delete": "Löschen",
+		"name": "Name",
+		"array": "Array",
+		"optional": "Optional",
+		"add": "Add",
+		"files": "Dateien",
+		"keywords": "Suchwörter",
+		"tags": "Tags",
+		"details": "Details",
+		"view": "Ansicht"
+	}
+}

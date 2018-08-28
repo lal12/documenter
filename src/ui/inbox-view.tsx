@@ -4,6 +4,7 @@ import Card from "antd/lib/card"
 import Checkbox from "antd/lib/checkbox";
 import Button from "antd/lib/button";
 import { withRouter } from "react-router";
+import {intl} from "../lang/intl";
 
 interface file{
     uuid:string,
@@ -46,17 +47,22 @@ class InboxView extends React.Component<InboxProps>{
     }
     render(){
         return (<div className="content" >
-            <h1>Inbox</h1>
-            <Button type="primary" 
-                disabled={this.state.files.filter(f=>f.checked).length == 0}
-                onClick={()=>this.createDoc()}>
-                Neues Dokument
-            </Button>
-            <Button type="danger" 
-                disabled={this.state.files.filter(f=>f.checked).length == 0}
-                onClick={()=>this.delFiles()}>
-                Löschen
-            </Button>
+            <h1 style={{display: "inline-block"}}>
+                {intl.get("menu_inbox")}
+            </h1>
+            <div style={{float: "right"}}>
+                <Button type="primary" size="large"
+                    disabled={this.state.files.filter(f=>f.checked).length == 0}
+                    onClick={()=>this.createDoc()} style={{marginRight: "10px"}}
+                >
+                    {intl.get("inbox_upload")}
+                </Button>
+                <Button type="danger" size="large"
+                    disabled={this.state.files.filter(f=>f.checked).length == 0}
+                    onClick={()=>this.delFiles()}>
+                    {intl.get("delete")}
+                </Button>
+            </div>
             <div>
                 {this.state.files.map(f=>(
                     <File filename={f.origFilename} 
@@ -112,8 +118,7 @@ class File extends React.Component<
         >
             <Card.Meta 
                 title={<span
-                    style={{fontSize: "11px", 
-                    }}
+                    style={{fontSize: "11px"}}
                 >{this.props.filename}</span>}
             />
         </Card>);

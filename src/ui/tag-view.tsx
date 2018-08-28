@@ -5,6 +5,7 @@ import List from "antd/lib/list";
 import Input from "antd/lib/input";
 import Divider from "antd/lib/divider";
 import {httpRequest} from "./api";
+import { intl } from "../lang/intl";
 
 export default class TagsView extends React.Component{
 	state: {tags: ({id: string, title: string})[], name: string};
@@ -51,10 +52,10 @@ export default class TagsView extends React.Component{
 			margin: "2vw",
 			padding: "1vw"
 		}}>
-			<h1>Tags</h1>
+			<h1>{intl.get("menu_tags")}</h1>
 			<Divider />
 			<div style={{marginBottom: "10px"}}>
-				<Input.Search placeholder="Name"
+				<Input.Search placeholder={intl.get("name")}
 					onChange={(e)=>this.setState({name: e.target.value})}
 					value={this.state.name}
 					onSearch={(v:string)=>this.addTag(v)} 

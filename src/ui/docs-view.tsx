@@ -8,6 +8,8 @@ import Input from "antd/lib/input";
 import Icon from "antd/lib/icon";
 import Checkbox from "antd/lib/checkbox";
 import {Link, withRouter} from "react-router-dom";
+import {intl} from "../lang/intl";
+import Divider from "antd/lib/divider";
 
 type tag = {
 	id: string,
@@ -92,22 +94,31 @@ class DocsView extends React.Component<DocsProps>{
 	}
 	render(){
 		return(<div className="content">
-			<h1>Dokumente</h1>
-			<Input type="file" hidden={true} 
-				ref="fileinput" onChange={e=>this.onFileUpload(e)} />
-			<Button type="primary" onClick={()=>this.addDoc()}>Dokument hochladen</Button>
-			<Checkbox checked={true} style={{marginLeft: "10px"}}>
-				Texterkennung für Bildinhalte aktivieren
-			</Checkbox>
+			<h1 style={{display: "inline-block"}}>
+				{intl.get("menu_doc")}
+			</h1>
+			<div style={{display: "inline-block", float: "right"}} >
+				<Input type="file" hidden={true}
+					ref="fileinput" onChange={e=>this.onFileUpload(e)} />
+				<Checkbox checked={true} style={{marginLeft: "10px"}}>
+					{intl.get("doc_upload_enable_ocr")}
+				</Checkbox>
+				<Button type="primary" size="large" onClick={()=>this.addDoc()}>
+					{intl.get("doc_upload")}
+				</Button>
+			</div>
+			
+			<Divider />
+			
 			<Table dataSource={this.state.docs}>
-				<Column title="Titel" key="title" dataIndex="title" />
+				<Column title={intl.get("title")} key="title" dataIndex="title" />
 				<Column key="tags" dataIndex="tags" render={tags=>tags.map((t:string)=>(
 					<Tag key={t}>{(this.id2tag(t) as tag).title}</Tag>
 				))} />
-				<Column title="Erstellt" key="documentDate" dataIndex="documentDate"
-					render={d=>d.toLocaleDateString()} />
-				<Column title="Hinzugefügt" key="added" dataIndex="added" 
-					render={d=>d.toLocaleDateString()} />
+				<Column title={intl.get("created")} key="documentDate" dataIndex="documentDate"
+					render={d=>intl.date(d)} />
+				<Column title={intl.get("added")} key="added" dataIndex="added" 
+					render={d=>intl.date(d)} />
 				<Column render={(uuid,doc: document)=>{
 					return (<React.Fragment>
 						<Link to={"/ui/docs/"+uuid}>
@@ -117,7 +128,7 @@ class DocsView extends React.Component<DocsProps>{
 							<Button><Icon type="download"/></Button>
 						</a>
 						<Button onClick={()=>{
-							if(confirm("Wollen Sie das Dokument '"+doc.title+"' wirklich löschen?")){
+							if(confirm(intl.get("doc_confirm_del", doc))){
 								httpRequest("DELETE", "/api/docs/"+uuid)
 									.then(()=>this.refresh())
 							}

@@ -7,6 +7,7 @@ import Input from "antd/lib/input";
 import Divider from "antd/lib/divider";
 import Select from "antd/lib/select";
 import Checkbox from "antd/lib/checkbox";
+import { intl } from "../lang/intl";
 
 type meta = {
 	id: string, 
@@ -41,8 +42,8 @@ export default class MetaView extends React.Component{
 			this.setState({title: "", isArray: false, type: "string"})
 		}
 	}
-	delMeta(t: any){
-		if(confirm("Wirklich das Attribut '"+t.title+"' und alle enthaltenen Daten löschen?")){
+	delMeta(t: meta){
+		if(confirm(intl.get("meta_confirm_del", t))){
 			httpRequest("DELETE", "/api/metas/"+t.id)
 			.then(()=>this.refresh());
 		}
@@ -50,7 +51,6 @@ export default class MetaView extends React.Component{
 	renderItem(t: meta){
 		let actions = [];
 		if(t.deleteable){
-			console.log(t)
 			actions.push(<Button type="danger" onClick={()=>this.delMeta(t)}>
 				<Icon type="delete"/>
 			</Button>)
@@ -72,7 +72,7 @@ export default class MetaView extends React.Component{
 			margin: "2vw",
 			padding: "1vw"
 		}}>
-			<h1>Attribute</h1>
+			<h1>{intl.get("menu_meta")}</h1>
 			<Divider />
 			<div style={{marginBottom: "10px"}}>
 				<Input placeholder="Name" value={this.state.title}
@@ -93,18 +93,18 @@ export default class MetaView extends React.Component{
 					onChange={e=>this.setState({isArray: e.target.checked})}
 					style={{marginRight: 10}}
 				>
-					Array
+					{intl.get("array")}
 				</Checkbox>
 				<Checkbox value={this.state.optional}
 					onChange={e=>this.setState({optional: e.target.checked})}
 					style={{marginRight: 10}}
 				>
-					Optional
+					{intl.get("optional")}
 				</Checkbox>
 				<Button type="primary" disabled={this.state.title.length == 0}
 					onClick={()=>this.addMeta()}
 					style={{marginRight: 10}} 
-				>Hinzufügen</Button>
+				>{intl.get("add")}</Button>
 			</div>
 			<List 
 				renderItem={(t: any)=>this.renderItem(t)}

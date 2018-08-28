@@ -1,7 +1,10 @@
 import * as React from "react";
 import Input from "antd/lib/input";
 import Button from "antd/lib/button";
+import DateTime from "react-datetime";
+import Date from "react-datetime";
 import Icon from "antd/lib/icon";
+import { Moment } from "moment";
 
 abstract class AbstractEditInput<T,P={}> extends React.Component<P & {
 	initValue?: T,
@@ -99,6 +102,118 @@ export class EditTextInput extends AbstractEditInput<string,{type: string, label
         return (<div>
             {this.props.label+": "}
             {this.state.value}
+            <Button type="primary" size="small" 
+				style={{marginLeft: "10px"}}
+				onClick={()=>this.edit()}>
+				<Icon type="edit"/>
+			</Button>
+        </div>);
+    }
+}
+
+export class EditNumberInput extends AbstractEditInput<number, {
+    min?: number,
+    max?: number,
+    step?: number,
+    label?: string
+}>{
+    renderEdit(){
+        return (<Input.Group compact style={{display: "table"}}>
+            <Input 
+                style={{display: "table-cell", width: "auto"}}
+                type="number"
+                value={this.state.value}
+                placeholder={this.props.label} 
+                addonBefore={this.props.label}
+                onChange={(e)=>
+                    this.change(parseFloat(e.target.value))
+                }
+            />
+            <Button onClick={()=>this.save()}  
+                style={{display: "table-cell"}}
+                type="primary" 
+            >
+                <Icon type="save" />
+            </Button>
+            <Button onClick={()=>this.abort()} 
+                style={{display: "table-cell"}}
+                type="danger" 
+            >
+                <Icon type="close" />
+            </Button>
+        </Input.Group>);
+    }
+    renderDisplay(){
+        return (<div>
+            {this.props.label+": "}
+            {this.state.value}
+            <Button type="primary" size="small" 
+				style={{marginLeft: "10px"}}
+				onClick={()=>this.edit()}>
+				<Icon type="edit"/>
+			</Button>
+        </div>);
+    }
+}
+
+export class EditDateTimeInput extends AbstractEditInput<Moment, {}>{
+    renderEdit(){
+        return (<Input.Group compact style={{display: "table"}}>
+            <DateTime 
+                value={this.state.value}
+                onChange={(e)=>this.change(e as Moment)}
+            />
+            <Button onClick={()=>this.save()}  
+                style={{display: "table-cell"}}
+                type="primary" 
+            >
+                <Icon type="save" />
+            </Button>
+            <Button onClick={()=>this.abort()} 
+                style={{display: "table-cell"}}
+                type="danger" 
+            >
+                <Icon type="close" />
+            </Button>
+        </Input.Group>);
+    }
+    renderDisplay(){
+        return (<div>
+            {this.state.value.format("DD.MM.YYYY")}
+            <Button type="primary" size="small" 
+				style={{marginLeft: "10px"}}
+				onClick={()=>this.edit()}>
+				<Icon type="edit"/>
+			</Button>
+        </div>);
+    }
+}
+
+export class EditDateInput extends AbstractEditInput<Moment, {}>{
+    renderEdit(){
+        return (<Input.Group compact style={{display: "table"}}>
+            <Date
+                value={this.state.value}
+                onChange={(e)=>this.change(e as Moment)}
+                locale="de"
+            />
+            <Button onClick={()=>this.save()}  
+                style={{display: "table-cell"}}
+                type="primary" 
+            >
+                <Icon type="save" />
+            </Button>
+            <Button onClick={()=>this.abort()} 
+                style={{display: "table-cell"}}
+                type="danger" 
+            >
+                <Icon type="close" />
+            </Button>
+        </Input.Group>);
+    }
+    renderDisplay(){
+        return (<div>
+            {this.state.value.format("DD.MM.YYYY hh:mm:ss")}
             <Button type="primary" size="small" 
 				style={{marginLeft: "10px"}}
 				onClick={()=>this.edit()}>

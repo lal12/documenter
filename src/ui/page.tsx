@@ -10,28 +10,36 @@ import DocsView from "./docs-view";
 import DocEditView from "./doc-edit-view";
 import InboxView from "./inbox-view";
 
+import Intl,{intl} from "../lang/intl";
+import { httpRequest } from "./api";
+
+const intlCreatePromise = Intl.create(()=>{
+	return httpRequest("GET", "/ui/lang.json")
+		.then(d=>(d));
+});
+
 class AppMenu extends React.Component<{location: any}>{
 	render(){
 		return(
 			<Menu mode="horizontal" selectedKeys={[this.props.location.pathname]} >
 				<Menu.Item key="/ui/docs">
 					<NavLink to="/ui/docs">
-						Dokumente
+						{intl.get("menu_doc")}
 					</NavLink>
 				</Menu.Item>
 				<Menu.Item key="/ui/inbox">
 					<NavLink to="/ui/inbox">
-						Inbox
+					{intl.get("menu_inbox")}
 					</NavLink>
 				</Menu.Item>
 				<Menu.Item key="/ui/tags">
 					<NavLink to="/ui/tags">
-						Tags
+						{intl.get("menu_tags")}
 					</NavLink>
 				</Menu.Item>
 				<Menu.Item key="/ui/meta">
 					<NavLink to="/ui/meta">
-						Attribute
+						{intl.get("menu_meta")}
 					</NavLink>
 				</Menu.Item>
 			</Menu>
@@ -63,4 +71,9 @@ class App extends React.Component{
 	}
 }
 
-document.onreadystatechange = ()=>render(<App />, document.getElementById("root"));
+Promise.all([
+	new Promise((res,rej)=>{document.onreadystatechange = ()=>res()}),
+	intlCreatePromise
+]).then(()=>{
+	render(<App />, document.getElementById("root"));
+});
