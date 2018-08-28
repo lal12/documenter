@@ -10,7 +10,7 @@ import DocsView from "./docs-view";
 import DocEditView from "./doc-edit-view";
 import InboxView from "./inbox-view";
 
-import Intl,{intl} from "../lang/intl";
+import Intl,{intl} from "./intl";
 import { httpRequest } from "./api";
 
 const intlCreatePromise = Intl.create(()=>{

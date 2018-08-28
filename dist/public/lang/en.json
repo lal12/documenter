@@ -29,6 +29,7 @@
 		"tags": "Tags",
 		"details": "Details",
 		"view": "View",
-		"doc_meta": "Attributes"
+		"doc_meta": "Attributes",
+		"noentries": "No entries"
 	}
 }

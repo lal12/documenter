@@ -4,7 +4,7 @@ import Card from "antd/lib/card"
 import Checkbox from "antd/lib/checkbox";
 import Button from "antd/lib/button";
 import { withRouter } from "react-router";
-import {intl} from "../lang/intl";
+import {intl} from "./intl";
 
 interface file{
     uuid:string,
@@ -64,6 +64,7 @@ class InboxView extends React.Component<InboxProps>{
                 </Button>
             </div>
             <div>
+                {this.state.files.length == 0 ? intl.get("noentries") : ""}
                 {this.state.files.map(f=>(
                     <File filename={f.origFilename} 
                         thumbnail={"/api/file/"+f.uuid+"/thumbnail"} 

@@ -5,7 +5,7 @@ import List from "antd/lib/list";
 import Input from "antd/lib/input";
 import Divider from "antd/lib/divider";
 import {httpRequest} from "./api";
-import { intl } from "../lang/intl";
+import { intl } from "./intl";
 
 export default class TagsView extends React.Component{
 	state: {tags: ({id: string, title: string})[], name: string};

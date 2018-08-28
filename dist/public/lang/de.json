@@ -23,11 +23,12 @@
 		"name": "Name",
 		"array": "Array",
 		"optional": "Optional",
-		"add": "Add",
+		"add": "Hinzufügen",
 		"files": "Dateien",
 		"keywords": "Suchwörter",
 		"tags": "Tags",
 		"details": "Details",
-		"view": "Ansicht"
+		"view": "Ansicht",
+		"noentries": "Keine Einträge"
 	}
 }

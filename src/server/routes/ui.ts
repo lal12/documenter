@@ -4,8 +4,8 @@ import * as Path from "path";
 export default function init(app: Express, assetsPath: string){
     app.get("/ui*", async (req, res)=>{
 		if(req.path == "/ui/lang.json"){
-			let lang = "en";
-			res.sendFile(Path.resolve(__dirname, "../../../src/lang", lang+".json"));
+			let lang = "de"; //TODO: dynamic language
+			res.sendFile(Path.resolve(assetsPath, "lang", lang+".json"));
 		}else{
 			res.sendFile(Path.join(assetsPath, "index.html"));
 		}

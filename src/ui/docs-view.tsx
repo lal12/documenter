@@ -8,7 +8,7 @@ import Input from "antd/lib/input";
 import Icon from "antd/lib/icon";
 import Checkbox from "antd/lib/checkbox";
 import {Link, withRouter} from "react-router-dom";
-import {intl} from "../lang/intl";
+import {intl} from "./intl";
 import Divider from "antd/lib/divider";
 
 type tag = {

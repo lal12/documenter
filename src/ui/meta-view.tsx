@@ -7,7 +7,7 @@ import Input from "antd/lib/input";
 import Divider from "antd/lib/divider";
 import Select from "antd/lib/select";
 import Checkbox from "antd/lib/checkbox";
-import { intl } from "../lang/intl";
+import { intl } from "./intl";
 
 type meta = {
 	id: string, 

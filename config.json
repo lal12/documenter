@@ -4,5 +4,10 @@
         "user": "root2",
         "password": "password",
         "database": "dms"
+    },
+    "paths":{
+        "files": "/home/luca/git/dms/files",
+        "thumbnails": "/home/luca/git/dms/thumbnails",
+        "tmp": "/tmp/documenter"
     }
 }

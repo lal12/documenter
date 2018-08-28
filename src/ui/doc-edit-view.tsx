@@ -11,7 +11,7 @@ import Tag from "antd/lib/tag";
 import Select from "react-select";
 import Divider from "antd/lib/divider";
 
-import {intl} from "../lang/intl";
+import {intl} from "./intl";
 
 type tag = {
 	id: string,
