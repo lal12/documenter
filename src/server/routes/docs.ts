@@ -23,6 +23,7 @@ export default function init(app: Express, jsonParser: NextHandleFunction, fileP
 		}
 	})
 	app.put("/api/docs/:uuid", jsonParser, async (req, res)=>{
+		let metas = await Meta.find();
 		let doc = await Document.findOne({uuid: req.params.uuid});
 		if(!doc){
 			res.status(404).end()
@@ -32,27 +33,103 @@ export default function init(app: Express, jsonParser: NextHandleFunction, fileP
 			res.status(422).send("Expecting json body!");
 			return;
 		}
+		let allowedMetaData : {[k:string]:JOI.Schema} = {};
+		metas.forEach(m=>{
+			switch(m.type){
+				case 'date':
+					allowedMetaData[m.id] = JOI.date().iso();
+				break;
+				case 'datetime':
+					allowedMetaData[m.id] = JOI.date().iso();
+				break;
+				case 'decimal':
+					allowedMetaData[m.id] = JOI.number();
+				break;
+				case 'int':
+					allowedMetaData[m.id] = JOI.number().integer();
+				break;
+				case 'string':
+					allowedMetaData[m.id] = JOI.string();
+				break;
+				case 'uint':
+					allowedMetaData[m.id] = JOI.number().integer().min(0);
+				break;
+			}
+			if(m.isArray)
+				allowedMetaData[m.id] = JOI.array().items(allowedMetaData[m.id]);
+			if(m.optional)
+				allowedMetaData[m.id] = allowedMetaData[m.id].optional();
+			
+		})
 		let {value, error} = JOI.object({
-			title: JOI.string().min(1).required(),
-			documentDate: JOI.date().iso().required(),
-			tags: JOI.array().items(JOI.string()).required(),
+			title: JOI.string().min(1).optional(),
+			documentDate: JOI.date().iso().optional(),
+			tags: JOI.array().items(JOI.string()).optional(),
+			metadata: allowedMetaData
 		}).validate(req.body);
 		if(error){
 			res.status(422).send(error.message);
 			return;
 		}
-		for(let tid of value.tags){
-			let tag = await Tag.findOne({id: tid});
-			if(!tag){
-				res.status(422).send("Unknown Tag: "+tid);
-				return;
+		if(value.metadata){
+			// Delete all old metadatas
+			let promises : Promise<any>[] = [
+				doc.metadata.then(mds=>
+					mds.map(md=>md.remove())
+				)
+			];
+			for(let m of metas){
+				let val = value.metadata[m.id];
+				if(val){
+					if(m.isArray){
+						(val as string[]).forEach((v,i)=>{
+							let md = new MetaData();
+							md.document = doc!;
+							if(m.isArray != Array.isArray(val)){
+								res.status(422).send("attr has invalid type: "+m.id);
+								return;
+							}					md.meta = m;
+							md.data = v;
+							md.index = i;
+							promises.push(md.save());
+						})
+					}else{
+						let md = new MetaData();
+						md.document = doc;
+						md.meta = m;
+						md.data = val;
+						promises.push(md.save());
+					}
+				}else if(!m.optional){
+					let md = new MetaData();
+					md.document = doc;
+					md.meta = m;
+					if(m.isArray){
+						md.index = 0;
+					}
+					promises.push(md.save());
+				}
 			}
-			doc.tags.push(tag);
+			await promises;
 		}
-		value.documentDate = new Date(value.documentDate);
-		doc.documentDate = value.documentDate;
+		if(value.title){
+			doc.title = value.title;
+		}
+		if(value.tags){
+			for(let tid of value.tags){
+				let tag = await Tag.findOne({id: tid});
+				if(!tag){
+					res.status(422).send("Unknown Tag: "+tid);
+					return;
+				}
+				doc.tags.push(tag);
+			}
+		}
+		if(value.documentDate){
+			doc.documentDate = new Date(value.documentDate);
+		}
 		await doc.save();
-		res.end();
+		res.json(doc.toObj()).end();
 	})
 	app.post("/api/docs/upload", upload.array("files", 20), async (req, res)=>{
 		let files = (req.files as any)as Express.Multer.File[];
@@ -65,17 +142,17 @@ export default function init(app: Express, jsonParser: NextHandleFunction, fileP
 			}
 		}
 		let doc = await Document.newDoc();
+		await doc.save();
 		let promises = files.map(async f=>{
 			let dbFile = new File();
 			dbFile.document = doc;
 			dbFile.origFilename = f.originalname;
 			dbFile.filetype = Path.extname(f.originalname).substr(1).toLowerCase() as any;
-			await dbFile.save()
-			await Util.promisify(FS.rename)(f.path, Path.join(filePath, dbFile.filename));
-			let text = await textFromFile(Path.join(filePath, dbFile.filename), dbFile.origFilename);
+			let text = await textFromFile(f.path, dbFile.origFilename);
 			let kw = keywordsFromText(text);
 			dbFile.keywords = await insertNonExistingKeywords(kw);
 			await dbFile.save();
+			await Util.promisify(FS.rename)(f.path, Path.join(filePath, dbFile.filename));
 		});
 		let kws = await Promise.all(promises);
 		res.json(await doc.toObj()).end()

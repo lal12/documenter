@@ -39,6 +39,8 @@ async function init(){
 		username: CONFIG.mysql.user,
 		password: CONFIG.mysql.password,
 		synchronize: true,
+		//debug:true,
+		charset: "utf8",
 		entities: [Tag, Document, Meta, MetaData, File, Keyword],
 	});
 
@@ -59,7 +61,6 @@ async function init(){
 
 
 	const app = express();
-	await new Promise((res,rej)=>app.listen(3000, ()=>res()));
 
 	app.use(ZIP());
 
@@ -69,13 +70,11 @@ async function init(){
 	initDocRoutes(app, jsonParser, filePath, upload)
 	initFileRoutes(app, filePath, upload);
 	
-
-	
 	app.get('/api/dates', async (req, res)=>{
 		//TODO
 	});
 
-	
+	await new Promise((res,rej)=>app.listen(3000, ()=>res()));
 }
 
 init();
