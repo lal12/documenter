@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/antd/3.8.2/antd.css" rel="stylesheet" />
+        <link href="/assets/react-datetime.css" rel="stylesheet" />
+        <title>DMS</title>
+        <script src="/assets/ui.js"></script>
+        <style>
+            .ant-tabs.ant-tabs-top.ant-tabs-line{
+                overflow: visible;
+            }
+            .rdt{
+                display: inline-block;
+            }
+            .ant-card-body .ant-card-meta-title{
+                height: 26px; min-width: 100%;
+            }
+            .ant-card-body:hover .ant-card-meta-title span{
+                position: absolute; z-index: 1000;
+                background-color: white;
+                padding: 3px; border-radius: 3px; border: solid  1px #ddd;
+                margin-left: -4px;
+                margin-top: 2px;
+            }
+            .file.checked{
+                box-shadow: 0 2px 8px rgba(24,144,255,1);
+            }
+            .file .ant-checkbox-wrapper{
+                position: absolute; bottom: 10px; right: 10px;
+                width: auto;
+            }
+            .content{
+                background-color: white;
+                margin: 2vw;
+                padding: 1vw;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="root"></div>
+    </body>
+</html>
