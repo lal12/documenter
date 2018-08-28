@@ -15,7 +15,7 @@
 		"doc_meta": "Attribute",
 		"doc_confirm_del": "Wirklich das Dokument '{title}' löschen?",
 		"meta_confirm_del": "Wirklich das Attribut '{title}' und alle enthaltenen Daten löschen?",
-		"inbox_upload": "Datei hochladen",
+		"inbox_create_doc": "Dokument aus Dateien",
 		"title": "Titel",
 		"created": "Erstellt",
 		"added": "Hinzugefügt",

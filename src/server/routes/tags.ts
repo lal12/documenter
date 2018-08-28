@@ -2,15 +2,16 @@ import {Express} from "express";
 import { Tag, Document } from "../entities";
 import { NextHandleFunction } from "connect";
 import * as JOI from "joi";
+import { Server } from "../server";
 
-export default function init(app: Express, jsonParser: NextHandleFunction){
+export default function init(server: Server){
     // Tags get, delete, add
-	app.get('/api/tags', async (req, res)=>{
+	server.app.get('/api/tags', async (req, res)=>{
 		let tags = await Tag.find();
 		tags.map( t=>({name: t.id, title: t.title}) )
 		res.json(tags);
 	});
-	app.delete('/api/tags/:tag', async (req, res)=>{
+	server.app.delete('/api/tags/:tag', async (req, res)=>{
 		let tags = await Tag.find({id: req.params.tag});
 		if(tags.length == 0){
 			res.status(404).send("Tag not found");
@@ -28,7 +29,7 @@ export default function init(app: Express, jsonParser: NextHandleFunction){
 		}
 		res.end();
 	});
-	app.post('/api/tags', jsonParser, async (req, res)=>{
+	server.app.post('/api/tags', server.jsonParser, async (req, res)=>{
 		if(req.header("Content-Type") != "application/json"){
 			res.status(422).send("Expecting json body!");
 			return;

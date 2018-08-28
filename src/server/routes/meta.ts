@@ -2,8 +2,10 @@ import {Express} from "express";
 import { NextHandleFunction } from "connect";
 import { Meta } from "../entities";
 import * as JOI from "joi";
+import { Server } from "../server";
 
-export default function init(app: Express, jsonParser: NextHandleFunction){
+export default function init(server: Server){
+	const app = server.app;
     // Meta get, delete, add
 	app.get('/api/metas', async (req, res)=>{
 		let metas = await Meta.find();
@@ -21,7 +23,7 @@ export default function init(app: Express, jsonParser: NextHandleFunction){
 		}
 		res.end();
 	});
-	app.post('/api/metas', jsonParser, async (req, res)=>{
+	app.post('/api/metas', server.jsonParser, async (req, res)=>{
 		if(req.header("Content-Type") != "application/json"){
 			res.status(422).send("Expecting json body!");
 			return;

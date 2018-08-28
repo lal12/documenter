@@ -7,8 +7,11 @@ import * as Path from "path";
 import * as FS from "fs";
 import * as Multer from "multer";
 import { textFromFile, keywordsFromText, insertNonExistingKeywords } from "../keywords";
+import { Server } from "../server";
+import { move } from "../utils";
 
-export default function init(app: Express, jsonParser: NextHandleFunction, filePath: string, upload: Multer.Instance){
+export default function init(server: Server){
+	const app = server.app;
     // Document methods
 	app.get("/api/docs", async (req, res)=>{
 		let docs = await Document.find();
@@ -22,7 +25,7 @@ export default function init(app: Express, jsonParser: NextHandleFunction, fileP
 			res.json(await doc.toObj()).end();
 		}
 	})
-	app.put("/api/docs/:uuid", jsonParser, async (req, res)=>{
+	app.put("/api/docs/:uuid", server.jsonParser, async (req, res)=>{
 		let metas = await Meta.find();
 		let doc = await Document.findOne({uuid: req.params.uuid});
 		if(!doc){
@@ -131,7 +134,7 @@ export default function init(app: Express, jsonParser: NextHandleFunction, fileP
 		await doc.save();
 		res.json(doc.toObj()).end();
 	})
-	app.post("/api/docs/upload", upload.array("files", 20), async (req, res)=>{
+	app.post("/api/docs/upload", server.upload.array("files", 20), async (req, res)=>{
 		let files = (req.files as any)as Express.Multer.File[];
 		for(let i in files){
 			let f = files[i];
@@ -152,12 +155,13 @@ export default function init(app: Express, jsonParser: NextHandleFunction, fileP
 			let kw = keywordsFromText(text);
 			dbFile.keywords = await insertNonExistingKeywords(kw);
 			await dbFile.save();
-			await Util.promisify(FS.rename)(f.path, Path.join(filePath, dbFile.filename));
+			await move(f.path, Path.join(server.filesPath, dbFile.filename));
+			dbFile.createThumbnail(server.filesPath, server.thumbnailPath);
 		});
 		let kws = await Promise.all(promises);
 		res.json(await doc.toObj()).end()
 	})
-	app.post("/api/docs/inbox", jsonParser, async (req, res)=>{
+	app.post("/api/docs/inbox", server.jsonParser, async (req, res)=>{
 		let fileUUIDs = req.body;
 		if(!fileUUIDs || !Array.isArray(fileUUIDs)){
 			res.status(422).send("Invalid post paramaters!");
@@ -185,7 +189,7 @@ export default function init(app: Express, jsonParser: NextHandleFunction, fileP
 			res.status(404).end();
 		}else{
 			let files = await doc.files;
-			files.forEach(f=>Util.promisify(FS.unlink)(Path.join(filePath, f.filename)))
+			files.forEach(f=>Util.promisify(FS.unlink)(Path.join(server.filesPath, f.filename)))
 			await Promise.all(files.map(f=>f.remove()));
 			await doc.remove();
 			res.end();
@@ -199,7 +203,7 @@ export default function init(app: Express, jsonParser: NextHandleFunction, fileP
 			let files = await doc.files;
 			(res as any).zip({
 				files: files.map(f=>({
-					path: Path.join(filePath, f.filename),
+					path: Path.join(server.filesPath, f.filename),
 					name: f.origFilename
 				})),
 				filename: doc.title+".zip"

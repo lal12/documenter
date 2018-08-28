@@ -12,7 +12,7 @@
 		"menu_meta": "Attributes",
 		"doc_upload_enable_ocr": "Enable text recognition for images",
 		"doc_upload": "Upload document",
-		"inbox_upload": "Upload file",
+		"inbox_create_doc": "Create Document",
 		"title": "Title",
 		"created": "Created",
 		"added": "Added",

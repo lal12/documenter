@@ -14,6 +14,7 @@ import initMetaRoutes from "./routes/meta";
 import initUiRoutes from "./routes/ui";
 import initDocRoutes from "./routes/docs";
 import initFileRoutes from "./routes/files";
+import { Server } from "./server";
 
 const {value, error} = JOI.object({
 	mysql: JOI.object({
@@ -26,7 +27,10 @@ const {value, error} = JOI.object({
 		files: JOI.string().min(1).required(),
         thumbnails: JOI.string().min(1).required(),
     	tmp: JOI.string().min(1).required()
-	}).required()
+	}).required(),
+	server: JOI.object({
+		port: JOI.number().min(1).max(0xFFFF).default(3000)
+	}).default({port: 3000})
 }).validate(require(Path.join(process.cwd(),"config.json")));
 
 if(error){
@@ -35,24 +39,27 @@ if(error){
 }
 
 const CONFIG = value;
-
-const filePath = CONFIG.paths.files;
-const uploadPath = CONFIG.paths.tmp;
-const thumbnailPath = CONFIG.paths.thumbnails;
 const tsNode = Path.extname(__filename) == ".ts";
-const assetsPath = Path.join(__dirname,  "..", tsNode ? "../dist" : "", "public");
-const jsonParser = bodyParser.json();
-const upload = Multer({dest: uploadPath})
+
 
 async function init(){
-	if(!await Util.promisify(FS.exists)(filePath)){
-		await Util.promisify(FS.mkdir)(filePath);
+	const server : Server = {
+		tmpPath: CONFIG.paths.tmp,
+		filesPath: CONFIG.paths.files,
+		thumbnailPath: CONFIG.paths.thumbnails,
+		assetsPath: Path.join(__dirname,  "..", tsNode ? "../dist" : "", "public"),
+		upload: Multer({dest: CONFIG.paths.tmp}),
+		jsonParser: bodyParser.json(),
+		app: null!
 	}
-	if(!await Util.promisify(FS.exists)(uploadPath)){
-		await Util.promisify(FS.mkdir)(uploadPath);
+	if(!await Util.promisify(FS.exists)(server.filesPath)){
+		await Util.promisify(FS.mkdir)(server.filesPath);
 	}
-	if(!await Util.promisify(FS.exists)(thumbnailPath)){
-		await Util.promisify(FS.mkdir)(thumbnailPath);
+	if(!await Util.promisify(FS.exists)(server.tmpPath)){
+		await Util.promisify(FS.mkdir)(server.tmpPath);
+	}
+	if(!await Util.promisify(FS.exists)(server.thumbnailPath)){
+		await Util.promisify(FS.mkdir)(server.thumbnailPath);
 	}
 	const db = await createConnection({
 		type: "mysql", 
@@ -81,21 +88,20 @@ async function init(){
 	}catch(e){}
 
 
-	const app = express();
+	server.app = express();
+	server.app.use(ZIP());
 
-	app.use(ZIP());
-
-	initTagRoutes(app, jsonParser);
-	initMetaRoutes(app, jsonParser)
-	initUiRoutes(app, assetsPath);
-	initDocRoutes(app, jsonParser, filePath, upload)
-	initFileRoutes(app, filePath, upload);
+	initTagRoutes(server);
+	initMetaRoutes(server)
+	initUiRoutes(server);
+	initDocRoutes(server)
+	initFileRoutes(server);
 	
-	app.get('/api/dates', async (req, res)=>{
+	server.app.get('/api/dates', async (req, res)=>{
 		//TODO
 	});
 
-	await new Promise((res,rej)=>app.listen(3000, ()=>res()));
+	await new Promise((res,rej)=>server.app.listen(CONFIG.server.port, ()=>res()));
 }
 
 init();

@@ -55,7 +55,7 @@ class InboxView extends React.Component<InboxProps>{
                     disabled={this.state.files.filter(f=>f.checked).length == 0}
                     onClick={()=>this.createDoc()} style={{marginRight: "10px"}}
                 >
-                    {intl.get("inbox_upload")}
+                    {intl.get("inbox_create_doc")}
                 </Button>
                 <Button type="danger" size="large"
                     disabled={this.state.files.filter(f=>f.checked).length == 0}
@@ -67,7 +67,7 @@ class InboxView extends React.Component<InboxProps>{
                 {this.state.files.length == 0 ? intl.get("noentries") : ""}
                 {this.state.files.map(f=>(
                     <File filename={f.origFilename} 
-                        thumbnail={"/api/file/"+f.uuid+"/thumbnail"} 
+                        thumbnail={"/api/files/"+f.uuid+"/thumbnail"} 
                         checked={f.checked}
                         onChange={(c)=>{f.checked = c; this.setState({})}} />
                 ))}

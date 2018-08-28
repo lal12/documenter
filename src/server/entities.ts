@@ -1,3 +1,7 @@
+import * as FS from "fs";
+import * as Path from "path";
+import {imgPreview, docPreview} from "doc-thumbnail";
+
 import {
 	BaseEntity, Column, CreateDateColumn, Entity,
 	Index, JoinColumn,
@@ -10,6 +14,7 @@ import {
 	UpdateDateColumn
 } from "typeorm";
 import { Document as Document2 } from "./entities";
+
 
 export const fileTypes: string[] = [
 	"pdf", "png", "jpg", "txt", "md", "docx", "xlsx", "odt", "ods", "txt"
@@ -55,6 +60,17 @@ export class File extends BaseEntity {
 			origFilename: this.origFilename,
 			document: this.document ? this.document.uuid : null,
 			keywords: this.keywords.map(kw => kw.keyword)
+		}
+	}
+
+	public async createThumbnail(filePath: string, thumbnailPath: string){
+		let ws = FS.createWriteStream(Path.join(thumbnailPath, this.uuid+".jpg"));
+		if(["jpg", "png", "pdf"].indexOf(this.filetype) > -1){
+			let rs = await imgPreview(Path.join(filePath, this.filename));
+			rs.pipe(ws);
+		}else{
+			let rs = await docPreview(Path.join(filePath, this.filename));
+			rs.pipe(ws);
 		}
 	}
 }

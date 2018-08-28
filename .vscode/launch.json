@@ -8,11 +8,16 @@
             "type": "node",
             "request": "launch",
             "name": "Server starten",
+            //"runtimeArgs": [
+            //    "-r", "ts-node/register", 
+            //    ],
+            //"args": [
+            //    "--project", "${workspaceFolder}/src/server/tsconfig.json",
+            //    "${workspaceFolder}/src/server/main.ts"],
             "program": "${workspaceFolder}/dist/server/main.js",
-            "outFiles": [
-                "${workspaceFolder}/**/*.js"
-            ],
-            "preLaunchTask": "watch server"
+            "preLaunchTask": "watch server",
+            "sourceMaps": true,
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
