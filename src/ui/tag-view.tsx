@@ -4,7 +4,7 @@ import Icon from "antd/lib/icon";
 import List from "antd/lib/list";
 import Input from "antd/lib/input";
 import Divider from "antd/lib/divider";
-import {httpRequest} from "./api";
+import {httpRequest, GraphQLQuery} from "./api";
 import { intl } from "./intl";
 
 export default class TagsView extends React.Component{
@@ -16,9 +16,14 @@ export default class TagsView extends React.Component{
 	componentWillMount(){
 		this.refresh();
 	}
-	refresh(){
-		httpRequest("GET", "/api/tags")
-		.then((d:any)=>this.setState({tags: d}));
+	async refresh(){
+		let d = await GraphQLQuery(`{
+			tags{
+        		id
+        		title
+      		}
+		}`);
+		this.setState({tags:d.tags})
 	}
 	async addTag(v: string){
 		let title = v;

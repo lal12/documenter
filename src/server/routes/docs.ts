@@ -1,7 +1,6 @@
 import {Express} from "express";
 import { NextHandleFunction } from "connect";
 import * as JOI from "joi";
-import { Meta, Tag, Document, File, fileTypes, MetaData } from "../entities";
 import * as Util from "util";
 import * as Path from "path";
 import * as FS from "fs";
@@ -9,14 +8,15 @@ import * as Multer from "multer";
 import { textFromFile, keywordsFromText, insertNonExistingKeywords } from "../keywords";
 import { Server } from "../server";
 import { move } from "../utils";
+import { Document } from "../entities/document";
+import { Meta } from "../entities/meta";
+import { MetaData } from "../entities/metadata";
+import { Tag } from "../entities/tag";
+import { fileTypes, File } from "../entities/file";
 
 export default function init(server: Server){
 	const app = server.app;
     // Document methods
-	app.get("/api/docs", async (req, res)=>{
-		let docs = await Document.find();
-		res.json(await Promise.all(docs.map(d=>d.toObj()))).end()
-	})
 	app.get("/api/docs/:uuid", async (req, res)=>{
 		let doc = await Document.findOne({uuid: req.params.uuid});
 		if(!doc){
@@ -153,7 +153,7 @@ export default function init(server: Server){
 			dbFile.filetype = Path.extname(f.originalname).substr(1).toLowerCase() as any;
 			let text = await textFromFile(f.path, dbFile.origFilename);
 			let kw = keywordsFromText(text);
-			dbFile.keywords = await insertNonExistingKeywords(kw);
+			dbFile.keywords = Promise.resolve(await insertNonExistingKeywords(kw));
 			await dbFile.save();
 			await move(f.path, Path.join(server.filesPath, dbFile.filename));
 			dbFile.createThumbnail(server.filesPath, server.thumbnailPath);

@@ -1,8 +1,8 @@
 import {Express} from "express";
 import { NextHandleFunction } from "connect";
-import { Meta } from "../entities";
 import * as JOI from "joi";
 import { Server } from "../server";
+import { Meta } from "../entities/meta";
 
 export default function init(server: Server){
 	const app = server.app;

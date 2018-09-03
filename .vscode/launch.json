@@ -17,7 +17,8 @@
             "program": "${workspaceFolder}/dist/server/main.js",
             "preLaunchTask": "watch server",
             "sourceMaps": true,
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "trace": true
         }
     ]
 }

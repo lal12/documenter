@@ -3,11 +3,12 @@ import * as Path from "path";
 import * as FS from "fs";
 import {createConnection, TableForeignKey} from "typeorm";
 import * as Util from "util";
-import { Tag, Document, Meta, MetaData, File, Keyword} from "./entities";
 import * as JOI from "joi";
 import * as bodyParser from "body-parser";
 import * as Multer from "multer";
-import * as ZIP from "express-easy-zip";
+const ZIP = require("express-easy-zip");
+import { buildSchema } from "type-graphql";
+import * as graphqlHTTP from 'express-graphql';
 
 import initTagRoutes from "./routes/tags";
 import initMetaRoutes from "./routes/meta";
@@ -15,6 +16,7 @@ import initUiRoutes from "./routes/ui";
 import initDocRoutes from "./routes/docs";
 import initFileRoutes from "./routes/files";
 import { Server } from "./server";
+import { Meta } from "./entities/meta";
 
 const {value, error} = JOI.object({
 	mysql: JOI.object({
@@ -61,7 +63,7 @@ async function init(){
 	if(!await Util.promisify(FS.exists)(server.thumbnailPath)){
 		await Util.promisify(FS.mkdir)(server.thumbnailPath);
 	}
-	const db = await createConnection({
+	const db = 	await createConnection({
 		type: "mysql", 
 		database: CONFIG.mysql.database,
 		username: CONFIG.mysql.user,
@@ -69,7 +71,7 @@ async function init(){
 		synchronize: true,
 		//debug:true,
 		charset: "utf8",
-		entities: [Tag, Document, Meta, MetaData, File, Keyword],
+		entities: [__dirname+"/entities/*.js"],
 	});
 
 	// Initialize db
@@ -90,6 +92,17 @@ async function init(){
 
 	server.app = express();
 	server.app.use(ZIP());
+
+	const schema = await buildSchema({
+		resolvers: [
+			"./entitities/*.ts"
+		],
+		
+	})
+	server.app.use("/graphql", graphqlHTTP({
+		schema: schema,
+		graphiql: true
+	}))
 
 	initTagRoutes(server);
 	initMetaRoutes(server)

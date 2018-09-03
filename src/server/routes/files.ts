@@ -1,5 +1,4 @@
 
-import { Meta, Tag, Document, File, fileTypes, MetaData } from "../entities";
 import * as Util from "util";
 import * as Path from "path";
 import * as FS from "fs";
@@ -8,6 +7,7 @@ import {Express} from "express";
 import { IsNull } from "typeorm";
 import { Server } from "../server";
 import { move } from "../utils";
+import { File, fileTypes } from "../entities/file";
 
 export default function init(server: Server){
     server.app.get("/api/files/:uuid", async (req,res)=>{

@@ -1,4 +1,4 @@
-import {httpRequest} from "./api";
+import {httpRequest, GraphQLQuery} from "./api";
 import * as React from "react";
 import Table from "antd/lib/table";
 import Tag from "antd/lib/tag";
@@ -21,11 +21,8 @@ type document = {
 	added: Date,
 	modified: Date,
 	documentDate: Date,
-	filetype: string,
 	title: string,
 	tags: tag[],
-	autoKeywords: string[],
-	customKeywords: string[]
 };
 
 type DocsProps = {match: any, location: any, history: any};
@@ -42,19 +39,26 @@ class DocsView extends React.Component<DocsProps>{
 			return this.state.tags[index];
 		return null;
 	}
-	refresh(){
-		httpRequest("GET", "/api/tags").then(d=>{
-			this.setState({tags: d});
-			return httpRequest("GET", "/api/docs")
-		}).then((data:any)=>{
-			data = data.map((d:document)=>({
-				...d, 
-				added: new Date(d.added),
-				modified: new Date(d.modified),
-				documentDate: new Date(d.documentDate)
-			}));
-			this.setState({docs: data})
-		});
+	async refresh(){
+		console.log("adsasd")
+		let data = await GraphQLQuery(`{
+			documents{
+				uuid
+				added
+				modified
+				documentDate
+				title
+				tags{
+					id
+				}
+			}
+			tags{
+				id
+				title
+			}
+		}`);
+		console.log (data)
+		this.setState({docs: data.documents, tags: data.tags});
 	}
 	addDoc(){
 		let finp = ((this.refs.fileinput as any).input as HTMLInputElement);

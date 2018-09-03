@@ -1,4 +1,4 @@
-import {httpRequest} from "./api";
+import {httpRequest, GraphQLQuery} from "./api";
 import * as React from "react";
 import Button from "antd/lib/button";
 import Icon from "antd/lib/icon";
@@ -18,34 +18,31 @@ type tag = {
 	title: string
 }
 
-interface metadata{
+type anyMetadata = metadata<true>|metadata<false>;
+
+interface metadata<arr extends Boolean> extends meta<arr>{
+	value: string[]
+}
+
+interface meta<arr extends Boolean>{
 	id: string,
 	title: string,
 	type: string,
 	optional: boolean,
-	isArray: boolean,
-	value?: string|string[]
-}
-interface metadataArray extends metadata{
-	isArray: true,
-	value: string[]
-}
-interface metadataSingle extends metadata{
-	isArray: false,
-	value: string
+	isArray: arr,
 }
 interface document{
 	uuid: string,
 	added: Date,
 	modified: Date,
 	documentDate: Date,
-	metadata: metadata[],
+	attributes: anyMetadata[],
 	title: string,
 	tags: string[],
-	keywords: string[],
 	files: {
-		name: string,
-		uuid: string
+		origFilename: string,
+		uuid: string,
+		keywords: string[],
 	}[]
 };
 
@@ -66,12 +63,12 @@ function strToVal(val: string, type: string): string|number|Date{
 	}
 }
 
-class EditMetadataArray extends React.Component<{md: metadataArray}>{
+class EditMetadataArray extends React.Component<metadata<true>>{
 
 }
 
 class EditMetadata extends React.Component<{
-	md: metadataSingle, 
+	md: metadata<false>, 
 	onSave?: (v:string|number|Date)=>void
 }>{
 	save(value: string|number|Date){
@@ -81,10 +78,10 @@ class EditMetadata extends React.Component<{
 	}
 	render(){
 		let md = this.props.md;
-		let val = strToVal(md.value, md.type);
+		let val = strToVal(md.value[0], md.type);
 		if(md.type == "string"){
 			return <EditTextInput 
-				initValue={md.value} 
+				initValue={md.value[0]} 
 				label="" type="string"
 				onSave={v=>this.save(v)} />;
 		}else if(md.type == "uint" || md.type == "int" || md.type == "decimal"){
@@ -110,27 +107,48 @@ class EditMetadata extends React.Component<{
 }
 
 export default class DocEditView extends React.Component<{uuid: string}>{
-	state: {doc: document|null, tags: tag[]};
+	state: {doc: document|null, tags: tag[], uuid: string};
 	constructor(props: {uuid: string}){
 		super(props);
-		this.state = {doc: null, tags: []};
+		this.state = {doc: null, tags: [], uuid: props.uuid};
 	}
 	componentDidMount(){
 		this.refresh();
 	}
-	refresh(){
-		httpRequest("GET", "/api/tags").then(d=>{
-			this.setState({tags: d});
-			return httpRequest("GET", "/api/docs/"+this.props.uuid)
-		}).then(d=>{
-			d = {
-				...d, 
-				added: new Date(d.added),
-				modified: new Date(d.modified),
-				documentDate: new Date(d.documentDate)
-			};
-			this.setState({doc: d})
-		})
+	async refresh(){
+		let data = await GraphQLQuery(`query($uuid:String!){
+			tags{
+				id
+				title
+			}
+			document(uuid:$uuid){
+				uuid
+				added
+				modified
+				documentDate
+				attributes{
+					id
+					title
+					type
+					optional
+					isArray
+					value
+				}
+				title
+				tags{
+					id
+				}
+				files{
+					origFilename
+					uuid
+          			keywords
+				}
+			}
+		}`, {uuid: this.state.uuid});
+		data.document.added = new Date(data.document.added);
+		data.document.modified = new Date(data.document.modified);
+		data.document.documentDate = new Date(data.document.documentDate);
+		this.setState({tags: data.tags, doc: data.document});
 	}
 	id2tag(id:string){
 		let index = this.state.tags.findIndex(t=>t.id == id);
@@ -142,7 +160,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 		let doc = this.state.doc;
 		if(doc){
 			let metadata : {[index:string]:string|string[]} = {};
-			for(let m of doc.metadata)
+			for(let m of doc.attributes)
 				metadata[m.id] = m.value!;
 			let docPart = {
 				title: doc.title,
@@ -171,9 +189,9 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 			this.save();
 		}
 	}
-	saveAttribute(md: metadata, i: number){
+	saveAttribute(md: anyMetadata, i: number){
 		if(this.state.doc){
-			this.state.doc.metadata[i] = md;
+			this.state.doc.attributes[i] = md;
 			this.save();
 		}
 	}
@@ -214,19 +232,19 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 			)}
 		/>);
 	}
-	renderAttribute(md: metadata, i:number){
+	renderAttribute(md: anyMetadata, i:number){
 		if(!md.isArray){
 			return <tr>
 				<td><b>{md.title+": "}</b></td>
 				<td>
 				<EditMetadata 
-					md={md as metadataSingle}
+					md={md as any}
 					onSave={(v:Date|number|string)=>{
 						if(v instanceof Date)
 							v = v.toISOString();
 						else
 							v = v.toString();
-						this.saveAttribute({...md, value: v}, i)}
+						this.saveAttribute({...md, value: [v]}, i)}
 					} />
 				</td>
 			</tr>;
@@ -302,6 +320,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 		if(this.state.doc == null)
 			return null;
 		let doc = this.state.doc as document;
+		let keywords = ([] as string[]).concat(...this.state.doc.files.map(f=>f.keywords));
 
 		return(<div className="content">
 			<div>
@@ -334,7 +353,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 							<td>{doc.files.map(f=>(
 								<a href={"/api/files/"+f.uuid} 
 									style={{marginRight: "10px"}}>
-									{f.name}
+									{f.origFilename}
 								</a>
 							))}</td>
 						</tr><tr>
@@ -348,7 +367,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 							<td>{intl.datetime(doc.modified)}</td>
 						</tr><tr>
 							<td><b>{intl.get("keywords")}: </b></td>
-							<td>{this.state.doc.keywords.join(", ")}</td>
+							<td>{keywords.join(", ")}</td>
 						</tr><tr>
 							<td><b>{intl.get("tags")}: </b></td>
 							<td>{this.renderEditTags(doc)}</td>
@@ -357,7 +376,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 					<Divider style={{marginTop: "15px"}} />
 					<h2>{intl.get("menu_meta")}</h2>
 					<table><tbody>
-						{this.state.doc.metadata.map((md,i)=>this.renderAttribute(md,i))}
+						{this.state.doc.attributes.map((md,i)=>this.renderAttribute(md,i))}
 					</tbody></table>
 				</Tabs.TabPane>
 				<Tabs.TabPane tab={intl.get("view")} key="2">

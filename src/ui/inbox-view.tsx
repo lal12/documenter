@@ -1,4 +1,4 @@
-import {httpRequest} from "./api";
+import {httpRequest, GraphQLQuery} from "./api";
 import * as React from "react";
 import Card from "antd/lib/card"
 import Checkbox from "antd/lib/checkbox";
@@ -6,26 +6,22 @@ import Button from "antd/lib/button";
 import { withRouter } from "react-router";
 import {intl} from "./intl";
 
-interface file{
-    uuid:string,
-    filetype:string,
-    origFilename: string,
-    document?: string // uuid
-}
-
 
 type InboxProps = {match: any, location: any, history: any};
 class InboxView extends React.Component<InboxProps>{
-    state: Readonly<{files: (file&{checked: boolean})[]}>;
+    state: Readonly<{files: ({uuid: string, origFilename: string, checked: boolean})[]}>;
     constructor(props: InboxProps){
         super(props);
         this.state = {files: []};
     }
-    refresh(){
-        httpRequest("GET", "/api/inbox")
-            .then(d=>this.setState({
-                files: d.map((f:any)=>({...f,checked: false}))
-            }))
+    async refresh(){
+        let d = await GraphQLQuery(`{
+			inbox{
+                uuid
+                origFilename
+            }
+        }`);
+        this.setState({ files: d.inbox.map( (f:any)=>({...f,checked: false}) ) });
     }
     componentDidMount(){
         this.refresh();

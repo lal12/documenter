@@ -1,16 +1,12 @@
 import {Express} from "express";
-import { Tag, Document } from "../entities";
 import { NextHandleFunction } from "connect";
 import * as JOI from "joi";
 import { Server } from "../server";
+import { Tag } from "../entities/tag";
+import { Document } from "../entities/document";
 
 export default function init(server: Server){
     // Tags get, delete, add
-	server.app.get('/api/tags', async (req, res)=>{
-		let tags = await Tag.find();
-		tags.map( t=>({name: t.id, title: t.title}) )
-		res.json(tags);
-	});
 	server.app.delete('/api/tags/:tag', async (req, res)=>{
 		let tags = await Tag.find({id: req.params.tag});
 		if(tags.length == 0){

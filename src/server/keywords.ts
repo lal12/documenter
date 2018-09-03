@@ -2,8 +2,8 @@ import * as FS from "fs";
 import * as Util from "util";
 import * as Path from "path";
 import * as Textract from "textract";
-import { Keyword } from "./entities";
 import * as Tokenizer from "wink-tokenizer";
+import { Keyword } from "./entities/keyword";
 
 function extractTextFromBuffer(name:string,buffer:Buffer): Promise<string>{
 	return new Promise((res,rej)=>{
@@ -41,7 +41,7 @@ export async function textFromFile(path: string, origFilename: string, useOCR: b
 		case 'jpg':
 			if(!useOCR)
 				throw new Error("Need OCR for PDF, but OCR is not enabled.")
-
+			
 		default:
 			throw new Error("Invalid file extension: "+ext);
 	}

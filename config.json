@@ -6,8 +6,8 @@
         "database": "dms"
     },
     "paths":{
-        "files": "/home/luca/git/dms/files",
-        "thumbnails": "/home/luca/git/dms/thumbnails",
+        "files": "/home/luca/git/documenter/files",
+        "thumbnails": "/home/luca/git/documenter/thumbnails",
         "tmp": "/tmp/documenter"
     }
 }

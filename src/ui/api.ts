@@ -40,3 +40,27 @@ export function httpRequest(method: string, url: string, data?: any) : Promise<a
 		}
 	});
 }
+
+export function GraphQLQuery(query: string, variables?: {[key:string]: any}, operationName?: string) : Promise<any>{
+    return new Promise((res,rej)=>{
+		let xhr = new XMLHttpRequest();
+		xhr.onreadystatechange = ()=>{
+			if(xhr.readyState == 4){
+				let d = JSON.parse(xhr.response);
+				if(d.errors){
+					rej(d);
+				}else{
+					res(d.data);
+				}
+			}
+		};
+		xhr.open("POST", "/graphql");
+		xhr.setRequestHeader("Content-Type", "application/json")
+		xhr.setRequestHeader("Accept", "application/json")
+		xhr.send(JSON.stringify({
+			query: query,
+			variables,
+			operationName
+		}));
+    });
+}

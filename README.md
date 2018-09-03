@@ -24,6 +24,7 @@ Documenter is a document management system.
 - `pdftotext` for PDF support
 - `tesseract` for OCR support
 - `unoconv`, and `imagemagick` for thumbnail preview
+- tools to build node extensions (`gcc`, `gyp`, ...) OCR pre processing
 
 **commands**
 
@@ -40,3 +41,20 @@ Edit config.json and insert the SQL host, database and credentials.
 Docker is the recommend method to install Documenter, since all the dependencies are bundled.
 
 TODO!
+
+
+
+## TODO
+
+- Complete Attribute handling
+- Write daemon for scanner
+- Add error handling on document creation
+- Add search for documents
+- Add view on document page
+- Implement OCR
+- Finish replacement of REST with GraphQL
+- Add tslint
+- Add tests
+
+## Future Ideas
+- Add user management + authentification
