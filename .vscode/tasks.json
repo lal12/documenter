@@ -4,13 +4,17 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Watch Server",
             "type": "typescript",
             "tsconfig": "src/server/tsconfig.json",
             "option": "watch",
             "problemMatcher": [
                 "$tsc-watch"
             ],
-            "label": "watch server"
+        },
+        {
+            "label": "Watch UI",
+            "command": "webpack -w src/ui/webpack.config.js --mode development"
         }
     ]
 }
