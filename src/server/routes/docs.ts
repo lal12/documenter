@@ -28,7 +28,7 @@ export default function init(server: Server){
 	})*/
 	app.put("/api/docs/:uuid", server.jsonParser, async (req, res)=>{
 		let metas = await Meta.find();
-		let doc = await Document.findOne({uuid: req.params.uuid});
+		let doc = await Document.findOne({uuid: req.params.uuid}, {loadEagerRelations: true});
 		if(!doc){
 			res.status(404).end()
 			return;
@@ -76,12 +76,9 @@ export default function init(server: Server){
 			return;
 		}
 		if(value.metadata){
-			// Delete all old metadatas
-			let promises : Promise<any>[] = [
-				doc.metadata.then(mds=>
-					mds.map(md=>md.remove())
-				)
-			];
+			doc.metadata = Promise.resolve([]);
+			await doc.save();
+			let promises : Promise<any>[] = [];
 			for(let m of metas){
 				let val = value.metadata[m.id];
 				if(val){
@@ -120,6 +117,7 @@ export default function init(server: Server){
 			doc.title = value.title;
 		}
 		if(value.tags){
+			doc.tags = [];
 			for(let tid of value.tags){
 				let tag = await Tag.findOne({id: tid});
 				if(!tag){
@@ -132,16 +130,22 @@ export default function init(server: Server){
 		if(value.documentDate){
 			doc.documentDate = new Date(value.documentDate);
 		}
+		try{
 		await doc.save();
-		res.json(doc.toObj()).end();
+		}catch(e){
+			debugger;
+		}
+		res.end();
 	})
 	async function postProcessFile(f: File){
 		const filepath = Path.join(server.filesPath, f.filename);
 		let text;
 		if(!f.isTextFile){
-			let ocrFilePath = Path.join(server.filesPath, Path.basename(f.filename, f.filetype)+"ocr"); // .pdf is automatically appended by tesseract!
+			let ocrFilePath = Path.join(server.filesPath, Path.basename(f.filename, f.filetype)+"ocr");
 			await runOCR(filepath, ocrFilePath);
-			text = await textFromFile(ocrFilePath, f.origFilename);
+			ocrFilePath += ".pdf"; // .pdf is automatically appended by tesseract!
+			let ocrOrigFilename = f.origFilename.split(".").slice(0,-1).join(".")+".ocr.pdf";
+			text = await textFromFile(ocrFilePath, ocrOrigFilename);
 		}else{
 			text = await textFromFile(filepath, f.origFilename);
 		}
@@ -174,7 +178,7 @@ export default function init(server: Server){
 				await dbFile.save();
 			});
 			let kws = await Promise.all(promises);
-			res.json(await doc.toObj()).end()
+			res.json({uuid: doc.uuid}).end()
 		}catch(e){
 			await doc.remove();
 			res.status(500);

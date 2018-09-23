@@ -40,7 +40,7 @@ export async function textFromFile(path: string, origFilename: string, useOCR: b
 		case 'png': // Image files
 		case 'jpg':
 			if(!useOCR)
-				throw new Error("Need OCR for PDF, but OCR is not enabled.")
+				throw new Error("Need OCR for PDF/PNG/JPG, but OCR is not enabled.")
 			
 		default:
 			throw new Error("Invalid file extension: "+ext);

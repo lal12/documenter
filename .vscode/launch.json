@@ -15,7 +15,7 @@
             //    "--project", "${workspaceFolder}/src/server/tsconfig.json",
             //    "${workspaceFolder}/src/server/main.ts"],
             "program": "${workspaceFolder}/dist/server/main.js",
-            "preLaunchTask": "watch server",
+            "preLaunchTask": "Watch Server",
             "sourceMaps": true,
             "cwd": "${workspaceFolder}",
             "trace": true

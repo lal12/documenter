@@ -43,6 +43,7 @@ interface document{
 		origFilename: string,
 		uuid: string,
 		keywords: string[],
+		isTextFile: boolean|"?"
 	}[]
 };
 
@@ -137,6 +138,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 				title
 				tags{
 					id
+					title
 				}
 				files{
 					origFilename
@@ -145,20 +147,18 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 				}
 			}
 		}`, {uuid: this.state.uuid});
+		data.document.tags = data.document.tags.map((t:any)=>t.id);
 		data.document.added = new Date(data.document.added);
 		data.document.modified = new Date(data.document.modified);
 		data.document.documentDate = new Date(data.document.documentDate);
 		this.setState({tags: data.tags, doc: data.document});
 	}
 	id2tag(id:string){
-		let index = this.state.tags.findIndex(t=>t.id == id);
-		if(index > -1)
-			return this.state.tags[index];
-		return null;
+		return this.state.tags.find(t=>t.id == id);
 	}
 	save(){
 		let doc = this.state.doc;
-		if(doc){
+		if(doc){ 
 			let metadata : {[index:string]:string|string[]} = {};
 			for(let m of doc.attributes)
 				metadata[m.id] = m.value!;
@@ -274,17 +274,17 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 		/>);
 	}
 	renderEditTags(doc:document){
+		console.log(this.id2tag, this.id2tag("test"));
 		const tags2vals = (tags:tag[])=>tags.map(t=>({label:t.title,value:t.id}));
 		const ids2vals = (ids:string[])=>ids.map(id=>({value:id,label:(this.id2tag(id) as tag).id}))
 		const vals2tags = (vals:{label:string,value:string}[])=>vals.map(v=>({id:v.value,title:v.label}));
 		const vals2ids = (vals:{label:string,value:string}[])=>vals.map(v=>v.value);
-		
 		return(<EditInput<string[]> 
 			initValue={doc.tags}
 			onSave={tags=>this.saveTags(tags)}
 			renderDisplay={(ids: string[], edit: ()=>void)=>(
 				<React.Fragment>
-					{ids.map(id=>(<Tag>{(this.id2tag(id) as tag).title}</Tag>))}
+					{ids.map(id=>(<Tag>{(this.id2tag(id) as tag || {title: ""}).title}</Tag>))}
 					<Button onClick={edit}
 						style={{marginLeft: "6px"}}
 						type="primary" size="small"
@@ -350,12 +350,14 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 							<td>{this.renderEditTitle(doc)}</td>
 						</tr><tr>
 							<td><b>{intl.get("files")}: </b></td>
-							<td>{doc.files.map(f=>(
-								<a href={"/api/files/"+f.uuid} 
-									style={{marginRight: "10px"}}>
-									{f.origFilename}
-								</a>
-							))}</td>
+							<td>
+								{doc.files.map(f=>(<span style={{marginRight: "10px"}}>
+									<a href={"/api/files/"+f.uuid}>
+										{f.origFilename}
+									</a>
+									{ f.isTextFile != false ? (<React.Fragment>&nbsp;(<a href={"/api/files/"+f.uuid+"/ocr"}>OCR</a>)</React.Fragment>) : null }
+								</span>))}
+							</td>
 						</tr><tr>
 							<td><b>{intl.get("created")}: </b></td>
 							<td>{this.renderEditDocDate(doc)}</td>

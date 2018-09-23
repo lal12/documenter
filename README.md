@@ -48,13 +48,12 @@ TODO!
 ## TODO
 
 - Complete Attribute handling
-- Add search for documents
 - Finish replacement of REST with GraphQL
 - Add tslint
 - Add tests
-- Provide link on ui to download ocred files
 - Create Docker image
 - Add settings section on UI for language ...
+- Add language setting on OCR-process
 
 ## Future Ideas
 - Add user management + authentification
@@ -62,3 +61,6 @@ TODO!
 - Write a daemon which listens for incoming scan (by pressing scan on the scanner)
 - Add a document viewer on document page
 - Do not ocr PDFs which already contain text
+- Add batch operations to UI
+- Add progress bar or some other indicator during OCR
+- Add more filtering options on documents page

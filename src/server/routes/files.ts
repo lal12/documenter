@@ -20,11 +20,11 @@ export default function init(server: Server){
 	})
 	server.app.get("/api/files/:uuid/ocr", async (req,res)=>{
 		let file = await File.findOne({uuid: req.params.uuid});
-		if(!file || file.isTextFile == false){
+		if(!file || file.isTextFile != false){
 			res.status(404).end();
 		}else{
 			let ocrpath = Path.join(server.filesPath, file.uuid+".ocr.pdf");
-			let dlFilename = Path.basename(file.origFilename, file.filetype)+".ocr.pdf";
+			let dlFilename = Path.basename(file.origFilename, file.filetype)+"ocr.pdf";
 			res.download(ocrpath, dlFilename);
 		}
 	})

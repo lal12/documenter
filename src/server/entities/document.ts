@@ -1,4 +1,4 @@
-import { ObjectType, Field, Resolver, Query, Arg, Int, ArgsType, Args, createUnionType } from "type-graphql";
+import { ObjectType, Field, Resolver, Query, Arg, Int, ArgsType, Args, createUnionType, ID } from "type-graphql";
 
 import { Entity, BaseEntity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Column, OneToMany, Index, ManyToMany, JoinTable } from "typeorm";
 
@@ -8,6 +8,7 @@ import { Tag } from "./tag";
 import { MetaData } from "./metadata";
 import { Meta } from "./meta";
 import { GraphQLNonNull, GraphQLString, GraphQLList, GraphQLObjectType, GraphQLBoolean, GraphQLUnionType } from "graphql";
+import { keywordsFromText } from "../keywords";
 
 
 @ObjectType("DocumentAttribute")
@@ -65,7 +66,7 @@ export class Document extends BaseEntity {
 	@JoinTable()
 	tags!: Tag[];
 
-	@OneToMany(type => MetaData, md => md.document)
+	@OneToMany(type => MetaData, md => md.document, {onDelete: "CASCADE"})
 	metadata!: Promise<MetaData[]>;
 
 	@Field(type=>[DocumentAttribute],{name: "attributes"})
@@ -103,6 +104,7 @@ export class Document extends BaseEntity {
 	}
 
 	public async toObj(){
+		throw new Error("Deprecated!")
 		return {};
 	}
 
@@ -131,6 +133,12 @@ export class Document extends BaseEntity {
 class GetDocumentsArgs{
 	@Field(type=>[String], {nullable: true})
 	uuids?: string[];
+
+	@Field(type=>String, {nullable: true})
+	search?: string;
+
+	@Field(type=>[String], {nullable: true})
+	tags?: string[];
 }
 
 @Resolver(Document)
@@ -144,10 +152,48 @@ class DocumentResolver{
 	}
 
 	@Query(returns=>[Document])
-	async documents(@Args() {uuids}: GetDocumentsArgs) : Promise<Document[]>{
+	async documents(@Args() {uuids, search, tags}: GetDocumentsArgs) : Promise<Document[]>{
+		let docs: Document[];
 		if(uuids)
-			return await Document.findByIds(uuids);
+			docs = await Document.findByIds(uuids,{loadEagerRelations: true});
 		else
-			return await Document.find();
+			docs = await Document.find({loadEagerRelations: true});
+		for(let d of docs){
+			await d.reload();
+		}
+		if(tags){
+			let matching = [];
+			for(let d of docs){
+				let dTags = (await d.tags).map(t=>t.id);
+				if(tags.every(val => dTags.includes(val))){
+					matching.push(d);
+				}
+			}
+			docs = matching;
+		}
+		if(search && docs.length > 0){
+			let docScores = docs.map(d=>({d, score: 0}));
+			const kws = keywordsFromText(search);
+			const sglScr = 1/kws.length; // Single Score
+			for(let ds of docScores){
+				if(ds.d.title.indexOf(search) > -1)
+					ds.score += 5;
+				let kwScore = 0;
+				let fnameScore = 0;
+				let files = await ds.d.files;
+				for(let f of files){
+					let fkws = await f.keywords;
+					for(let kw of kws){
+						kwScore += sglScr * fkws.filter(fkw=>kw==fkw.keyword).length;
+						if(f.origFilename.indexOf(kw) > -1)
+							fnameScore += 1;
+					}
+					
+				}
+				ds.score += kwScore + fnameScore / files.length;
+			}
+			docs = docScores.filter(ds=>ds.score > 0).sort((a,b)=>a.score-b.score).map(ds=>ds.d);
+		}
+		return docs;
 	}
 }

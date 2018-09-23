@@ -30,6 +30,7 @@
 		"tags": "Tags",
 		"details": "Details",
 		"view": "Ansicht",
-		"noentries": "Keine Einträge"
+		"noentries": "Keine Einträge",
+		"search_input": "Suchbegriffe eingeben"
 	}
 }

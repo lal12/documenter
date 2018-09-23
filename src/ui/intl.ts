@@ -43,7 +43,7 @@ export default class Intl{
 	public get(name: string, ...args: any[]){
 		if(!this.data.strings[name]){
 			console.warn("Unknown value: ", name);
-			return this.data.unknown ? this.data.unknown : "(Unknown)";
+			return name;
 		}else{
 			return this.format(this.data.strings[name], args);
 		}

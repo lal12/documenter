@@ -30,6 +30,7 @@
 		"details": "Details",
 		"view": "View",
 		"doc_meta": "Attributes",
-		"noentries": "No entries"
+		"noentries": "No entries",
+		"search_input": "Enter search words"
 	}
 }

@@ -10,6 +10,7 @@ import Checkbox from "antd/lib/checkbox";
 import {Link, withRouter} from "react-router-dom";
 import {intl} from "./intl";
 import Divider from "antd/lib/divider";
+import Search from "antd/lib/input/Search";
 
 type tag = {
 	id: string,
@@ -27,22 +28,15 @@ type document = {
 
 type DocsProps = {match: any, location: any, history: any};
 class DocsView extends React.Component<DocsProps>{
-	state: {docs: document[], tags: tag[]};
+	state: {docs: document[], tags: tag[], search: null|string};
 	constructor(props: DocsProps){
 		super(props);
-		this.state = {docs: [], tags: []};
+		this.state = {docs: [], tags: [], search: null};
 		this.refresh();
 	}
-	id2tag(id:string):tag|null{
-		let index = this.state.tags.findIndex(t=>t.id == id);
-		if(index > -1)
-			return this.state.tags[index];
-		return null;
-	}
 	async refresh(){
-		console.log("adsasd")
-		let data = await GraphQLQuery(`{
-			documents{
+		let data = await GraphQLQuery(`query($search: String){
+			documents(search: $search){
 				uuid
 				added
 				modified
@@ -50,15 +44,11 @@ class DocsView extends React.Component<DocsProps>{
 				title
 				tags{
 					id
+					title
 				}
 			}
-			tags{
-				id
-				title
-			}
-		}`);
-		console.log (data)
-		this.setState({docs: data.documents, tags: data.tags});
+		}`, {search: this.state.search});
+		this.setState({docs: data.documents});
 	}
 	addDoc(){
 		let finp = ((this.refs.fileinput as any).input as HTMLInputElement);
@@ -101,7 +91,16 @@ class DocsView extends React.Component<DocsProps>{
 			<h1 style={{display: "inline-block"}}>
 				{intl.get("menu_doc")}
 			</h1>
+				<Search
+					size="large"
+					placeholder={intl.get("search_input")}
+					onSearch={value =>{
+						this.setState({search: value.length ? value : null},()=>this.refresh());
+					}}
+					style={{ marginLeft: 50, width: "300px" }}
+				/>
 			<div style={{display: "inline-block", float: "right"}} >
+				
 				<Input type="file" hidden={true}
 					ref="fileinput" onChange={e=>this.onFileUpload(e)} />
 				<Button type="primary" size="large" onClick={()=>this.addDoc()}>
@@ -113,8 +112,8 @@ class DocsView extends React.Component<DocsProps>{
 			
 			<Table dataSource={this.state.docs}>
 				<Column title={intl.get("title")} key="title" dataIndex="title" />
-				<Column key="tags" dataIndex="tags" render={tags=>tags.map((t:string)=>(
-					<Tag key={t}>{(this.id2tag(t) as tag).title}</Tag>
+				<Column key="tags" dataIndex="tags" render={tags=>tags.map((t:any)=>(
+					<Tag key={t.id}>{t.title}</Tag>
 				))} />
 				<Column title={intl.get("created")} key="documentDate" dataIndex="documentDate"
 					render={d=>intl.date(d)} />
