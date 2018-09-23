@@ -14,7 +14,12 @@
         },
         {
             "label": "Watch UI",
-            "command": "webpack -w src/ui/webpack.config.js --mode development"
+            "command": "node_modules/.bin/webpack",
+            "args": [
+                "-w",
+                "--config", "src/ui/webpack.config.js",
+                "--mode", "development"
+            ]
         }
     ]
 }

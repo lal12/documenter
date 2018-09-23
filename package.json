@@ -39,7 +39,8 @@
     "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
     "typescript": "^3.0.1",
-    "webpack": "^4.16.5"
+    "webpack": "^4.16.5",
+    "webpack-cli": "^3.1.1"
   },
   "dependencies": {
     "body-parser": "^1.18.3",
@@ -57,7 +58,6 @@
     "reflect-metadata": "^0.1.12",
     "sqlite3": "^4.0.2",
     "string-format": "^2.0.0",
-    "tesseractocr": "^1.1.1",
     "textract": "^2.4.0",
     "type-graphql": "^0.13.1",
     "typeorm": "^0.2.7",
