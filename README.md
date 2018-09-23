@@ -1,5 +1,6 @@
 # Documenter
-Documenter is a document management system. 
+
+Documenter is small but useful document management system, ideal for usage in your home network. You can search for keywords in all your documents, even scanned ones. It supports multiple file formats and uses OCR to convert images and scanned files to searchable PDFs.
 
 ## Features
 
@@ -53,9 +54,11 @@ TODO!
 - Add tests
 - Provide link on ui to download ocred files
 - Create Docker image
+- Add settings section on UI for language ...
 
 ## Future Ideas
 - Add user management + authentification
+- Scan via button
 - Write a daemon which listens for incoming scan (by pressing scan on the scanner)
 - Add a document viewer on document page
 - Do not ocr PDFs which already contain text
