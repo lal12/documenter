@@ -52,8 +52,10 @@ TODO!
 - Add tslint
 - Add tests
 - Provide link on ui to download ocred files
+- Create Docker image
 
 ## Future Ideas
 - Add user management + authentification
 - Write a daemon which listens for incoming scan (by pressing scan on the scanner)
 - Add a document viewer on document page
+- Do not ocr PDFs which already contain text
