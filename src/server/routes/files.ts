@@ -18,6 +18,16 @@ export default function init(server: Server){
 			res.download(Path.join(server.filesPath, file.filename), file.origFilename)
 		}
 	})
+	server.app.get("/api/files/:uuid/ocr", async (req,res)=>{
+		let file = await File.findOne({uuid: req.params.uuid});
+		if(!file || file.isTextFile == false){
+			res.status(404).end();
+		}else{
+			let ocrpath = Path.join(server.filesPath, file.uuid+".ocr.pdf");
+			let dlFilename = Path.basename(file.origFilename, file.filetype)+".ocr.pdf";
+			res.download(ocrpath, dlFilename);
+		}
+	})
 	server.app.get("/api/files/:uuid/thumbnail", async (req,res)=>{
 		let file = await File.findOne({uuid: req.params.uuid});
 		if(!file){

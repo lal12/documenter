@@ -1,4 +1,7 @@
 import * as FS from "fs";
+import * as Util from "util";
+import * as ChildProc from "child_process";
+
 
 export function move(oldPath: string, newPath: string): Promise<"copy"|"rename">{
 	return new Promise((res,rej)=>{
@@ -24,6 +27,14 @@ export function move(oldPath: string, newPath: string): Promise<"copy"|"rename">
 			readStream.pipe(writeStream);
 		}
 	})
+}
 
-    
+let tesseractBin: string;
+export async function runOCR(inpath: string, outpath: string){
+	if(!tesseractBin){
+		tesseractBin = (await Util.promisify(ChildProc.exec)("which tesseract")).stdout.trim();
+	}
+	let r = await Util.promisify(ChildProc.execFile)(tesseractBin, [
+		inpath, outpath, "pdf"
+	]);
 }

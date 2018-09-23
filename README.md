@@ -47,14 +47,13 @@ TODO!
 ## TODO
 
 - Complete Attribute handling
-- Write daemon for scanner
-- Add error handling on document creation
 - Add search for documents
-- Add view on document page
-- Implement OCR
 - Finish replacement of REST with GraphQL
 - Add tslint
 - Add tests
+- Provide link on ui to download ocred files
 
 ## Future Ideas
 - Add user management + authentification
+- Write a daemon which listens for incoming scan (by pressing scan on the scanner)
+- Add a document viewer on document page

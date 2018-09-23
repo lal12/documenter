@@ -104,9 +104,6 @@ class DocsView extends React.Component<DocsProps>{
 			<div style={{display: "inline-block", float: "right"}} >
 				<Input type="file" hidden={true}
 					ref="fileinput" onChange={e=>this.onFileUpload(e)} />
-				<Checkbox checked={true} style={{marginLeft: "10px"}}>
-					{intl.get("doc_upload_enable_ocr")}
-				</Checkbox>
 				<Button type="primary" size="large" onClick={()=>this.addDoc()}>
 					{intl.get("doc_upload")}
 				</Button>

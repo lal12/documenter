@@ -7,9 +7,8 @@ import { Keyword } from "./keyword";
 import * as Path from "path";
 import * as FS from "fs";
 
-
 export const fileTypes: string[] = [
-	"pdf", "png", "jpg", "txt", "md", "docx", "xlsx", "odt", "ods", "txt"
+	"pdf", "png", "jpg", "txt", "md", "docx", "xlsx", "odt", "ods"
 ];
 
 @ObjectType("file")
@@ -74,6 +73,24 @@ export class File extends BaseEntity {
 		}else{
 			let rs = await docPreview(Path.join(filePath, this.filename));
 			rs.pipe(ws);
+		}
+	}
+
+	@Field(type=>Boolean)
+	public get isTextFile(){
+		switch(this.filetype){
+			case "png":
+			case "jpg":
+				return false;
+			case "txt":
+			case "md":
+			case "docx":
+			case "xlsx":
+			case "odt":
+			case "ods":
+				return true
+			case "pdf":
+				return "?"
 		}
 	}
 }

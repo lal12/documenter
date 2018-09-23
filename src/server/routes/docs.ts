@@ -7,7 +7,7 @@ import * as FS from "fs";
 import * as Multer from "multer";
 import { textFromFile, keywordsFromText, insertNonExistingKeywords } from "../keywords";
 import { Server } from "../server";
-import { move } from "../utils";
+import { move, runOCR } from "../utils";
 import { Document } from "../entities/document";
 import { Meta } from "../entities/meta";
 import { MetaData } from "../entities/metadata";
@@ -17,6 +17,7 @@ import { fileTypes, File } from "../entities/file";
 export default function init(server: Server){
 	const app = server.app;
     // Document methods
+	/* replaced by graphql
 	app.get("/api/docs/:uuid", async (req, res)=>{
 		let doc = await Document.findOne({uuid: req.params.uuid});
 		if(!doc){
@@ -24,7 +25,7 @@ export default function init(server: Server){
 		}else{
 			res.json(await doc.toObj()).end();
 		}
-	})
+	})*/
 	app.put("/api/docs/:uuid", server.jsonParser, async (req, res)=>{
 		let metas = await Meta.find();
 		let doc = await Document.findOne({uuid: req.params.uuid});
@@ -134,6 +135,19 @@ export default function init(server: Server){
 		await doc.save();
 		res.json(doc.toObj()).end();
 	})
+	async function postProcessFile(f: File){
+		const filepath = Path.join(server.filesPath, f.filename);
+		let text;
+		if(!f.isTextFile){
+			let ocrFilePath = Path.join(server.filesPath, Path.basename(f.filename, f.filetype)+"ocr"); // .pdf is automatically appended by tesseract!
+			await runOCR(filepath, ocrFilePath);
+			text = await textFromFile(ocrFilePath, f.origFilename);
+		}else{
+			text = await textFromFile(filepath, f.origFilename);
+		}
+		let kw = keywordsFromText(text);
+		f.keywords = Promise.resolve(await insertNonExistingKeywords(kw));
+	}
 	app.post("/api/docs/upload", server.upload.array("files", 20), async (req, res)=>{
 		let files = (req.files as any)as Express.Multer.File[];
 		for(let i in files){
@@ -146,20 +160,25 @@ export default function init(server: Server){
 		}
 		let doc = await Document.newDoc();
 		await doc.save();
-		let promises = files.map(async f=>{
-			let dbFile = new File();
-			dbFile.document = doc;
-			dbFile.origFilename = f.originalname;
-			dbFile.filetype = Path.extname(f.originalname).substr(1).toLowerCase() as any;
-			let text = await textFromFile(f.path, dbFile.origFilename);
-			let kw = keywordsFromText(text);
-			dbFile.keywords = Promise.resolve(await insertNonExistingKeywords(kw));
-			await dbFile.save();
-			await move(f.path, Path.join(server.filesPath, dbFile.filename));
-			dbFile.createThumbnail(server.filesPath, server.thumbnailPath);
-		});
-		let kws = await Promise.all(promises);
-		res.json(await doc.toObj()).end()
+		try{
+			let promises = files.map(async f=>{
+				let dbFile = new File();
+				dbFile.document = doc;
+				dbFile.origFilename = f.originalname;
+				dbFile.filetype = Path.extname(f.originalname).substr(1).toLowerCase() as any;
+				await dbFile.save(); // Save first time to retrieve uuid
+				const filepath = Path.join(server.filesPath, dbFile.filename);
+				await move(f.path, filepath);
+				await postProcessFile(dbFile);
+				dbFile.createThumbnail(server.filesPath, server.thumbnailPath);
+				await dbFile.save();
+			});
+			let kws = await Promise.all(promises);
+			res.json(await doc.toObj()).end()
+		}catch(e){
+			await doc.remove();
+			res.status(500);
+		}
 	})
 	app.post("/api/docs/inbox", server.jsonParser, async (req, res)=>{
 		let fileUUIDs = req.body;
@@ -177,9 +196,10 @@ export default function init(server: Server){
 			files.push(f);
 		}
 		let doc = await Document.newDoc();
-		await Promise.all(files.map(f=>{
+		await Promise.all(files.map(async f=>{
 			f.document = doc;
-			return f.save();
+			await postProcessFile(f);
+			await f.save();
 		}))
 		res.json(await doc.toObj()).end()
 	})
@@ -210,6 +230,7 @@ export default function init(server: Server){
 			});
 		}
 	})
+	/* replaced by graphql
 	app.get("/api/docs/:uuid/files", async (req,res)=>{
 		let doc = await Document.findOne({uuid: req.params.uuid});
 		if(!doc){
@@ -223,4 +244,5 @@ export default function init(server: Server){
 			}))).end();
 		}
 	})
+	*/
 }
