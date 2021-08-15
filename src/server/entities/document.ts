@@ -239,7 +239,7 @@ class DocumentResolver{
 					let fkws = await f.keywords;
 					for(let kw of kws){
 						kwScore += sglScr * fkws.filter(fkw=>kw==fkw.keyword).length;
-						if(f.origFilename.indexOf(kw) > -1)
+						if(f.origFilename.toLocaleLowerCase().indexOf(kw.toLocaleLowerCase()) > -1)
 							fnameScore += 1;
 					}
 					

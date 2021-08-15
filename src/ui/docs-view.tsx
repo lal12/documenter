@@ -25,6 +25,9 @@ type document = {
 	documentDate: Date,
 	title: string,
 	tags: tag[],
+	files: Array<{
+		uuid: string
+	}>
 };
 
 type DocsProps = {match: any, location: any, history: any};
@@ -46,6 +49,9 @@ class DocsView extends React.Component<DocsProps>{
 				tags{
 					id
 					title
+				}
+				files{
+					uuid
 				}
 			}
 		}`, {search: this.state.search});
@@ -112,7 +118,13 @@ class DocsView extends React.Component<DocsProps>{
 			<Divider />
 			
 			<Table dataSource={this.state.docs}>
-				<Column title={intl.get("title")} key="title" dataIndex="title" />
+				<Column key="title" dataIndex="title" render={(uuid, doc: document)=>
+					<React.Fragment>
+						<img style={{height: 120}} src={"/api/files/"+doc.files[0].uuid+"/thumbnail"} />
+						&nbsp;&nbsp;
+						<span>{doc.title}</span>
+					</React.Fragment>
+				} />
 				<Column key="tags" dataIndex="tags" render={tags=>tags.map((t:any)=>(
 					<Tag key={t.id}>{t.title}</Tag>
 				))} />

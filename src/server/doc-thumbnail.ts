@@ -33,8 +33,6 @@ export interface DocPreviewConf extends BaseConfig{
 
 
 export async function docPreview(filepath: string, conf: DocPreviewConf = {}){
-	if(!conf)
-		conf = {};
 	let stat = await FS.stat(filepath);
 	if(!stat.isFile()){
 		throw new Error("Path is not a file: "+filepath);
@@ -89,7 +87,7 @@ export async function imgPreview(filepath: string, conf: BaseConfig = {}){
 		"-thumbnail", size,
 		"-background", "white",
 		"-alpha", "remove",
-		Path.resolve(filepath),
+		Path.resolve(filepath)+'[0]',
 		"jpeg:-"
 	], {
 		stdio: ['ignore', 'pipe', 'ignore']

@@ -270,7 +270,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 					onSave={(v:DateTime|number|string)=>{
 						if(v instanceof DateTime){
 							if(md.type == 'date' || md.type == 'datetime'){
-								v = v.toMillis();
+								v = v.toMillis().toString();
 							}else{
 								throw new Error(`Invalid type/value combination! type ${md.type} and DateTime object`);
 							}
@@ -287,7 +287,6 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 		return <EditDateTimeInput  initValue={doc.documentDate} onSave={v=>this.saveDocDate(v)} />
 	}
 	renderEditTags(doc:document){
-		console.log(this.id2tag, this.id2tag("test"));
 		const tags2vals = (tags:tag[])=>tags.map(t=>({label:t.title,value:t.id}));
 		const ids2vals = (ids:string[])=>ids.map(id=>({value:id,label:(this.id2tag(id) as tag).id}))
 		const vals2tags = (vals:{label:string,value:string}[])=>vals.map(v=>({id:v.value,title:v.label}));
@@ -411,7 +410,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 
 const FileViewer = ({file}: {file: document['files'][0]}) => {
 	const url = "/api/files/"+file.uuid+"/embed";
-	switch(file.origFilename.match(/\.(\w+)$/)[1]){
+	switch(file.origFilename.match(/\.(\w+)$/)![1]){
 		case "pdf":
 			return <object type="application/pdf" style={{width: '100%', minHeight: '70vh'}} data={url} />
 		case "png": 
@@ -426,6 +425,6 @@ const FileViewer = ({file}: {file: document['files'][0]}) => {
 		case "ods":
 			return <span>{intl.get("viewing_not_possible_yet")}</span>
 		default:
-			return <span>Unknown file type {f.origFilename}</span>
+			return <span>Unknown file type {file.origFilename}</span>
 	}
 }
