@@ -162,41 +162,11 @@ export class EditDateTimeInput extends AbstractEditInput<DateTime, {}>{
 		return (<Input.Group compact style={{display: "table"}}>
 			<DatePicker 
 				selected={this.state.value.toJSDate()}
-				onChange={(e)=>this.change(DateTime.fromJSDate(e as Date))}  
-			/>
-			<Button onClick={()=>this.save()}  
-				style={{display: "table-cell"}}
-				type="primary" 
-			>
-				<Icon type="save" />
-			</Button>
-			<Button onClick={()=>this.abort()} 
-				style={{display: "table-cell"}}
-				type="danger" 
-			>
-				<Icon type="close" />
-			</Button>
-		</Input.Group>);
-	}
-	renderDisplay(){
-		return (<div>
-			{intl.date(this.state.value)}
-			<Button type="primary" size="small" 
-				style={{marginLeft: "10px"}}
-				onClick={()=>this.edit()}>
-				<Icon type="edit"/>
-			</Button>
-		</div>);
-	}
-}
-
-export class EditDateInput extends AbstractEditInput<DateTime, {}>{
-	renderEdit(){
-		return (<Input.Group compact style={{display: "table"}}>
-			<DatePicker 
-                selected={this.state.value.toJSDate()}
-                onChange={(e)=>this.change(DateTime.fromJSDate(e as Date))}
+				onChange={(e)=>this.change(DateTime.fromJSDate(e as Date))} 
+				locale={intl.locale}
 				showTimeSelect
+				dateFormat={intl.data.datetimeFormat}
+				timeCaption={intl.get('time')}
 			/>
 			<Button onClick={()=>this.save()}  
 				style={{display: "table-cell"}}
@@ -215,6 +185,41 @@ export class EditDateInput extends AbstractEditInput<DateTime, {}>{
 	renderDisplay(){
 		return (<div>
 			{intl.datetime(this.state.value)}
+			<Button type="primary" size="small" 
+				style={{marginLeft: "10px"}}
+				onClick={()=>this.edit()}>
+				<Icon type="edit"/>
+			</Button>
+		</div>);
+	}
+}
+
+export class EditDateInput extends AbstractEditInput<DateTime, {}>{
+	renderEdit(){
+		return (<Input.Group compact style={{display: "table"}}>
+			<DatePicker 
+                selected={this.state.value.toJSDate()}
+                onChange={(e)=>this.change(DateTime.fromJSDate(e as Date))}
+				locale={intl.locale}
+				dateFormat={intl.data.dateFormat}
+			/>
+			<Button onClick={()=>this.save()}  
+				style={{display: "table-cell"}}
+				type="primary" 
+			>
+				<Icon type="save" />
+			</Button>
+			<Button onClick={()=>this.abort()} 
+				style={{display: "table-cell"}}
+				type="danger" 
+			>
+				<Icon type="close" />
+			</Button>
+		</Input.Group>);
+	}
+	renderDisplay(){
+		return (<div>
+			{intl.date(this.state.value)}
 			<Button type="primary" size="small" 
 				style={{marginLeft: "10px"}}
 				onClick={()=>this.edit()}>

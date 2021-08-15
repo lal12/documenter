@@ -12,8 +12,12 @@ import {MetaValueType} from '../shared/types';
 
 import {intl} from "./intl";
 import { DateTime } from "luxon";
-import DatePicker from 'react-datepicker';
+import DatePicker, { registerLocale } from 'react-datepicker';
 import { Col, Row } from "antd";
+
+import de from 'date-fns/locale/de';
+registerLocale('de', de)
+
 
 type tag = {
 	id: string,
@@ -280,27 +284,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 		}
 	}
 	renderEditDocDate(doc: document){
-		return(<EditInput<DateTime>
-			initValue={doc.documentDate}
-			onSave={(v)=>this.saveDocDate(v)}
-			renderDisplay={(v: DateTime, edit: ()=>void)=>(
-				<React.Fragment>
-					{intl.datetime(v)}
-					<Button onClick={edit}
-						style={{marginLeft: "6px"}} type="primary" size="small"
-					>
-						<Icon type="edit" />
-					</Button>
-				</React.Fragment>
-			)} 
-			renderEdit={(v: DateTime, save: ()=>void, abort: ()=>void, change:(v: DateTime)=>void)=>(
-				<React.Fragment>
-					<DatePicker onChange={(e)=>change(DateTime.fromJSDate(e as Date))} selected={v.toJSDate()} locale="de"/>
-					<Button onClick={save} type="primary"><Icon type="save" /></Button>
-					<Button onClick={abort} type="danger"><Icon type="close" /></Button>
-				</React.Fragment>
-			)}
-		/>);
+		return <EditDateTimeInput  initValue={doc.documentDate} onSave={v=>this.saveDocDate(v)} />
 	}
 	renderEditTags(doc:document){
 		console.log(this.id2tag, this.id2tag("test"));
@@ -382,7 +366,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 								</tr><tr>
 									<td><b>{intl.get("files")}: </b></td>
 									<td>
-										{doc.files.map(f=>(<span key={f.uuid} style={{marginRight: "10px"}}>
+										{doc.files.map(f=>(<span key={f.uuid+"/download"} style={{marginRight: "10px"}}>
 											<a href={"/api/files/"+f.uuid}>
 												{f.origFilename}
 											</a>
@@ -408,7 +392,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 							</tbody></table>
 						</Col>
 						<Col md={7}>
-							{doc.files.map(f=><img key={f.uuid} src={"/api/files/"+f.uuid+'/thumbnail'} />)}
+							{doc.files.map(f=><img style={{maxWidth: '100%'}} key={f.uuid} src={"/api/files/"+f.uuid+'/thumbnail'} />)}
 						</Col>
 					</Row>
 					<Divider style={{marginTop: "15px"}} />
@@ -417,10 +401,31 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 						{this.state.doc.attributes.map((md,i)=>this.renderAttribute(md,i))}
 					</tbody></table>
 				</Tabs.TabPane>
-				<Tabs.TabPane tab={intl.get("view")} key="2">
-					
-				</Tabs.TabPane>
+				{doc.files.map(f=><Tabs.TabPane key={f.uuid} tab={f.origFilename}>
+					<FileViewer file={f} />
+				</Tabs.TabPane>)}
 			</Tabs>
 		</div>);
+	}
+}
+
+const FileViewer = ({file}: {file: document['files'][0]}) => {
+	const url = "/api/files/"+file.uuid+"/embed";
+	switch(file.origFilename.match(/\.(\w+)$/)[1]){
+		case "pdf":
+			return <object type="application/pdf" style={{width: '100%', minHeight: '70vh'}} data={url} />
+		case "png": 
+		case "jpg":
+			return <img src={url} alt={file.origFilename} />
+		case "txt":
+		case "md": //TODO add markdown view
+			return <iframe src={url} />
+		case "docx": 
+		case "xlsx":
+		case "odt": 
+		case "ods":
+			return <span>{intl.get("viewing_not_possible_yet")}</span>
+		default:
+			return <span>Unknown file type {f.origFilename}</span>
 	}
 }

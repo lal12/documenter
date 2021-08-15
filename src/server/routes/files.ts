@@ -9,7 +9,15 @@ import { move } from "../utils";
 import { File, fileTypes } from "../entities/file";
 
 export default function init(server: Server){
-    server.app.get("/api/files/:uuid", async (req,res)=>{
+    server.app.get("/api/files/:uuid/embed", async (req,res)=>{
+		let file = await File.findOne({uuid: req.params.uuid});
+		if(!file){
+			res.status(404).end();
+		}else{
+			res.sendFile(Path.join(server.filesPath, file.filename))
+		}
+	})
+	server.app.get("/api/files/:uuid/download", async (req,res)=>{
 		let file = await File.findOne({uuid: req.params.uuid});
 		if(!file){
 			res.status(404).end();

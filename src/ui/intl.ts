@@ -13,14 +13,17 @@ interface LocaleData{
 export let intl : Intl;
 
 export default class Intl{
-	private data!: LocaleData;
+	private _data!: LocaleData;
+	public get data(){
+		return {...this._data};
+	}
 	private _format: (template: string, ...args: any[])=>string;
 	private static intl : Intl;
 
 	public static async create(load: ()=>LocaleData|Promise<LocaleData>): Promise<Intl>{
 		return Promise.resolve(load()).then(data=>{
 			const _intl = new Intl(data.lang);
-			_intl.data = data;
+			_intl._data = data;
 			intl = _intl;
 			return _intl;
 		})
@@ -41,11 +44,11 @@ export default class Intl{
 		return this._format(template, ...args);
 	}
 	public get(name: string, ...args: any[]){
-		if(!this.data.strings[name]){
+		if(!this._data.strings[name]){
 			console.warn("Unknown value: ", name);
 			return name;
 		}else{
-			return this.format(this.data.strings[name], args);
+			return this.format(this._data.strings[name], args);
 		}
 	}
 	get locale(){
@@ -54,22 +57,22 @@ export default class Intl{
 	public date(date: Date|DateTime){
 		if(date instanceof Date)
 			date = DateTime.fromJSDate(date);
-		if(this.data.dateFormat)
-			return date.toFormat(this.data.dateFormat);
+		if(this._data.dateFormat)
+			return date.toFormat(this._data.dateFormat);
 		return date.toFormat("LL");
 	}
 	public time(date: Date|DateTime){
 		if(date instanceof Date)
 			date = DateTime.fromJSDate(date);
-		if(this.data.timeFormat)
-			return date.toFormat(this.data.timeFormat);
+		if(this._data.timeFormat)
+			return date.toFormat(this._data.timeFormat);
 		return date.toFormat("LTS");
 	}
 	public datetime(date: Date|DateTime){
 		if(date instanceof Date)
 			date = DateTime.fromJSDate(date);
-		if(this.data.datetimeFormat)
-			return date.toFormat(this.data.datetimeFormat);
+		if(this._data.datetimeFormat)
+			return date.toFormat(this._data.datetimeFormat);
 		return date.toFormat("LLL");
 	}
 	public number(no: number){

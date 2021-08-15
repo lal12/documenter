@@ -31,6 +31,8 @@
 		"view": "View",
 		"doc_meta": "Attributes",
 		"noentries": "No entries",
-		"search_input": "Enter search words"
+		"search_input": "Enter search words",
+		"viewing_not_possible_yet": "Viewing this file type is not possible yet!",
+		"time": "Time"
 	}
 }
