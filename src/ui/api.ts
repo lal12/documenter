@@ -1,3 +1,5 @@
+import React from "react";
+
 export function httpRequest(method: string, url: string, data?: any) : Promise<any>{
 	return new Promise((res,rej)=>{
 		if(data){
@@ -63,4 +65,16 @@ export function GraphQLQuery(query: string, variables?: {[key:string]: any}, ope
 			operationName
 		}));
     });
+}
+
+export function useGQL<T extends {[index: string]: any} = any>(query: string, variables: {[key:string]: any} = {}, operationName?: string, def: T = ({} as any)): [T, ()=>Promise<void>]{
+	const [data, setData] = React.useState<T>(def);
+	async function load(){
+		const data = await GraphQLQuery(query, variables, operationName);
+		setData(data);
+	}
+	React.useEffect(()=>{
+		load();
+	}, [query, ...Object.keys(variables), ...Object.values(variables).map(v=>JSON.stringify(v)), operationName]);
+	return [data, load];
 }

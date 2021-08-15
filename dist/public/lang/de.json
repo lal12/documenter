@@ -33,6 +33,7 @@
 		"noentries": "Keine Einträge",
 		"search_input": "Suchbegriffe eingeben",
 		"viewing_not_possible_yet": "Ansehen dieses Dateityps ist noch nicht möglich!",
-		"time": "Uhrzeit"
+		"time": "Uhrzeit",
+		"filter_tags": "Tags auswählen um zu filtern"
 	}
 }

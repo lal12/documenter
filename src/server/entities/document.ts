@@ -215,7 +215,7 @@ class DocumentResolver{
 		for(let d of docs){
 			await d.reload();
 		}
-		if(tags){
+		if(tags && tags.length > 0){
 			let matching = [];
 			for(let d of docs){
 				let dTags = (await d.tags).map(t=>t.id);

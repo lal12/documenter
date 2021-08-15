@@ -1,80 +1,72 @@
-import {httpRequest, GraphQLQuery} from "./api";
+import {httpRequest, GraphQLQuery, useGQL} from "./api";
 import * as React from "react";
 import Card from "antd/lib/card"
 import Checkbox from "antd/lib/checkbox";
 import Button from "antd/lib/button";
-import { withRouter } from "react-router";
 import {intl} from "./intl";
 
 
 type InboxProps = {match: any, location: any, history: any};
-class InboxView extends React.Component<InboxProps>{
-    state: Readonly<{files: ({uuid: string, origFilename: string, checked: boolean})[]}>;
-    constructor(props: InboxProps){
-        super(props);
-        this.state = {files: []};
+
+const InboxView = (props: InboxProps)=>{
+    const [{inbox: files}, loadFiles] = useGQL<{inbox: Array<{uuid: string, origFilename: string}>}>(`{
+        inbox{
+            uuid
+            origFilename
+        }
+    }`, {}, undefined, {inbox: []});
+    const [checked, setChecked2] = React.useState<string[]>([]);
+    
+
+    function setChecked(uuids: string[]){
+        setChecked2(Array.from(new Set(uuids)));
     }
-    async refresh(){
-        let d = await GraphQLQuery(`{
-			inbox{
-                uuid
-                origFilename
-            }
-        }`);
-        this.setState({ files: d.inbox.map( (f:any)=>({...f,checked: false}) ) });
-    }
-    componentDidMount(){
-        this.refresh();
-    }
-    createDoc(){
-        let files = this.state.files.filter(f=>f.checked).map(f=>f.uuid);
-        httpRequest("POST", "/api/docs/inbox", files)
+
+    function createDoc(){
+        httpRequest("POST", "/api/docs/inbox", checked)
             .then(d=>this.props.history.push("/ui/docs/"+d.uuid))
     }
-    delFiles(){
+
+    function delFiles(){
         if(confirm("Wirklich die gewählten Dateien löschen?")){
-            let files = this.state.files.filter(f=>f.checked).map(f=>f.uuid);
             Promise.all(
-                files.map(uuid=>
+                checked.map(uuid=>
                     httpRequest("DELETE", "/api/files/"+uuid)
                 )
-            ).then(()=>this.refresh())
+            ).then(()=>loadFiles())
         }
     }
-    render(){
-        return (<div className="content" >
-            <h1 style={{display: "inline-block"}}>
-                {intl.get("menu_inbox")}
-            </h1>
-            <div style={{float: "right"}}>
-                <Button type="primary" size="large"
-                    disabled={this.state.files.filter(f=>f.checked).length == 0}
-                    onClick={()=>this.createDoc()} style={{marginRight: "10px"}}
-                >
-                    {intl.get("inbox_create_doc")}
-                </Button>
-                <Button type="danger" size="large"
-                    disabled={this.state.files.filter(f=>f.checked).length == 0}
-                    onClick={()=>this.delFiles()}>
-                    {intl.get("delete")}
-                </Button>
-            </div>
-            <div>
-                {this.state.files.length == 0 ? intl.get("noentries") : ""}
-                {this.state.files.map(f=>(
-                    <File key={f.uuid} filename={f.origFilename} 
-                        thumbnail={"/api/files/"+f.uuid+"/thumbnail"} 
-                        checked={f.checked}
-                        onChange={(c)=>{f.checked = c; this.setState({})}} />
-                ))}
-            </div>
-        </div>);
-    }
+
+    return <div className="content" >
+        <h1 style={{display: "inline-block"}}>
+            {intl.get("menu_inbox")}
+        </h1>
+        <div style={{float: "right"}}>
+            <Button type="primary" size="large"
+                disabled={checked.length == 0}
+                onClick={()=>createDoc()} style={{marginRight: "10px"}}
+            >
+                {intl.get("inbox_create_doc")}
+            </Button>
+            <Button type="danger" size="large"
+                disabled={checked.length == 0}
+                onClick={()=>delFiles()}>
+                {intl.get("delete")}
+            </Button>
+        </div>
+        <div>
+            {files.length == 0 ? intl.get("noentries") : ""}
+            {files.map(f=>(
+                <File key={f.uuid} filename={f.origFilename} 
+                    thumbnail={"/api/files/"+f.uuid+"/thumbnail"} 
+                    checked={checked.includes(f.uuid)}
+                    onChange={(c)=>c ? setChecked([...checked, f.uuid]) : setChecked(checked.filter(uuid=>uuid != f.uuid))} />
+            ))}
+        </div>
+    </div>;
 }
 
-const InboxViewRouter = withRouter(InboxView);
-export default InboxViewRouter;
-
+export default InboxView;
 
 type fileProps = {
     filename: string, 
