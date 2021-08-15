@@ -1,11 +1,12 @@
 import { ObjectType, Field, Resolver, Query, Arg } from "type-graphql";
-import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, Index, ManyToOne, JoinColumn, ManyToMany, JoinTable, IsNull } from "typeorm";
+import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, Index, ManyToOne, JoinColumn, ManyToMany, JoinTable, IsNull, AfterRemove, BeforeRemove, BeforeInsert } from "typeorm";
 import { IsUUID, IsString, IsIn, MinLength } from "class-validator";
 import { Document } from "./document";
-import { imgPreview, docPreview } from "doc-thumbnail";
 import { Keyword } from "./keyword";
 import * as Path from "path";
-import * as FS from "fs";
+import * as FS from "fs-extra";
+import { getServer } from "../server";
+import { docPreview, imgPreview } from "../doc-thumbnail";
 
 export const fileTypes: string[] = [
 	"pdf", "png", "jpg", "txt", "md", "docx", "xlsx", "odt", "ods"
@@ -14,14 +15,21 @@ export const fileTypes: string[] = [
 @ObjectType("file")
 @Entity("file")
 export class File extends BaseEntity {
+	@AfterRemove()
+	deleteFile(){
+		FS.unlink(Path.join(getServer().filesPath, this.filename)).catch(e=>console.warn('failed to delete file'+this.filename));
+		if(!this.isTextFile)
+			FS.unlink(Path.join(getServer().filesPath, this.uuid+'.ocr.pdf')).catch(e=>console.debug('failed to delete ocr file'+this.filename));
+		FS.unlink(Path.join(getServer().thumbnailPath, this.uuid+'.jpg')).catch(e=>console.debug('failed to delete thumbnail for '+this.uuid));
+	}
+
 	@Field() @IsUUID()
 	@PrimaryGeneratedColumn("uuid")
 	uuid!: string;
 
-	@Field() @IsString() @IsIn(fileTypes)
-	@Column("enum", {
+	@Field() @IsString() @IsIn(["pdf", "png", "jpg", "txt", "md", "docx", "xlsx", "odt", "ods"])
+	@Column("text", {
 		nullable: false,
-		enum: fileTypes,
 		name: "filetype"
 	})
 	filetype!: string;
@@ -41,7 +49,7 @@ export class File extends BaseEntity {
 	@Column("uuid", { nullable: true })
 	documentUUID?: string;
 
-	@ManyToMany(type => Keyword, kw => kw.files, { lazy: true })
+	@ManyToMany(type => Keyword, kw => kw.files, { lazy: true, onDelete: 'CASCADE' })
 	@JoinTable()
 	keywords!: Promise<Keyword[]>;
 
@@ -69,10 +77,10 @@ export class File extends BaseEntity {
 		let ws = FS.createWriteStream(Path.join(thumbnailPath, this.uuid+".jpg"));
 		if(["jpg", "png", "pdf"].indexOf(this.filetype) > -1){
 			let rs = await imgPreview(Path.join(filePath, this.filename));
-			rs.pipe(ws);
+			rs.pipe(ws, {end: true});
 		}else{
 			let rs = await docPreview(Path.join(filePath, this.filename));
-			rs.pipe(ws);
+			rs.pipe(ws, {end: true});
 		}
 	}
 

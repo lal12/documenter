@@ -35,9 +35,9 @@ export default class MetaView extends React.Component{
 		if(title.length){
 			httpRequest("POST", "/api/metas", {
 				title, 
-				id: title.toLowerCase().replace(/[^0-9a-z]/, ""),
 				type: this.state.type,
-				isArray: this.state.isArray
+				isArray: this.state.isArray,
+				optional: this.state.optional
 			}).then(d=>this.refresh())
 			this.setState({title: "", isArray: false, type: "string"})
 		}
@@ -78,9 +78,10 @@ export default class MetaView extends React.Component{
 				<Input placeholder="Name" value={this.state.title}
 					style={{width:250, marginRight: 10}}
 					onChange={e=>this.setState({title: e.target.value})}
+					minLength={5}
 				/>
 				<Select value={this.state.type}
-					onChange={v=>this.setState({type: v})}
+					onChange={(v: any)=>this.setState({type: v})}
 					style={{marginRight: 10}}
 				>
 					<Select.Option value="string">string</Select.Option>
@@ -89,19 +90,19 @@ export default class MetaView extends React.Component{
 					<Select.Option value="int">int</Select.Option>
 					<Select.Option value="decimal">decimal</Select.Option>
 				</Select>
-				<Checkbox value={this.state.isArray}
+				<Checkbox checked={this.state.isArray}
 					onChange={e=>this.setState({isArray: e.target.checked})}
 					style={{marginRight: 10}}
 				>
 					{intl.get("array")}
 				</Checkbox>
-				<Checkbox value={this.state.optional}
+				<Checkbox checked={this.state.optional}
 					onChange={e=>this.setState({optional: e.target.checked})}
 					style={{marginRight: 10}}
 				>
 					{intl.get("optional")}
 				</Checkbox>
-				<Button type="primary" disabled={this.state.title.length == 0}
+				<Button type="primary" disabled={this.state.title.length < 5}
 					onClick={()=>this.addMeta()}
 					style={{marginRight: 10}} 
 				>{intl.get("add")}</Button>

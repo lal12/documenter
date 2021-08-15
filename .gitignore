@@ -1,6 +1,5 @@
-node_modules
-dist/public/ui.js
-dist/server
-package-lock.json
-uploads
-files
+/node_modules
+/dist/public/ui.js
+/dist/server
+/package-lock.json
+/data

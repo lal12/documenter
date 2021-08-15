@@ -20,7 +20,6 @@ Documenter is small but useful document management system, ideal for usage in yo
 **Requirements**
 
 - NodeJS, NPM
-- MySQL or MariaDB
 - `antiword` or `textutil` on OS X for doc support
 - `pdftotext` for PDF support
 - `tesseract` for OCR support
@@ -32,7 +31,7 @@ Documenter is small but useful document management system, ideal for usage in yo
 	# install
 	npm install documenter 
 
-Edit config.json and insert the SQL host, database and credentials.
+Edit config.json and modify the paths if wished.
 
 	# start
 	node_modules/.bin/documenter 

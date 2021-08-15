@@ -1,15 +1,42 @@
-import { ObjectType, Field, Resolver, Query, Arg, Int, ArgsType, Args, createUnionType, ID } from "type-graphql";
+import { ObjectType, Field, Resolver, Query, Arg, ArgsType, Args } from "type-graphql";
 
-import { Entity, BaseEntity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Column, OneToMany, Index, ManyToMany, JoinTable } from "typeorm";
+import { Entity, BaseEntity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Column, OneToMany, Index, ManyToMany, JoinTable, AfterRemove, BeforeRemove, BeforeUpdate, BeforeInsert } from "typeorm";
 
 import { IsUUID, IsDate, IsString, MinLength, MaxLength } from "class-validator";
 import { File } from "./file";
 import { Tag } from "./tag";
 import { MetaData } from "./metadata";
 import { Meta } from "./meta";
-import { GraphQLNonNull, GraphQLString, GraphQLList, GraphQLObjectType, GraphQLBoolean, GraphQLUnionType } from "graphql";
 import { keywordsFromText } from "../keywords";
+import { DateTime } from "luxon";
+import { GraphQLScalarType, Kind } from "graphql";
 
+
+export const GQLDateTime = new GraphQLScalarType({
+	name: "DateTime",
+	description: "DateTime",
+	serialize(value: DateTime): number {
+	  // check the type of received value
+	  if (!(value instanceof DateTime)) {
+		throw new Error("GQLDateTime can only serialize DateTime values");
+	  }
+	  return value.toMillis(); // value sent to the client
+	},
+	parseValue(value: number): DateTime {
+	  // check the type of received value
+	  if (typeof value !== "number") {
+		throw new Error("GQLDateTime can only parse number values");
+	  }
+	  return DateTime.fromMillis(value); // value from the client input variables
+	},
+	parseLiteral(ast): DateTime {
+	  // check the type of received value
+	  if (ast.kind !== Kind.INT) {
+		throw new Error("GQLDateTime can only parse INT values");
+	  }
+	  return DateTime.fromMillis(parseInt(ast.value));
+	},
+});
 
 @ObjectType("DocumentAttribute")
 class DocumentAttribute{
@@ -27,33 +54,60 @@ class DocumentAttribute{
 	value!: string[];
 }
 
+
+const DateTimeTransformer = {
+	from: (v: number)=>DateTime.fromMillis(v),
+	to: (v: DateTime)=>v.toMillis()
+}
 @ObjectType("document")
 @Entity("document")
 export class Document extends BaseEntity {
+	@BeforeRemove()
+	deleteFiles(){
+		this.files.then(files=>files.forEach(f=>f.deleteFile()));
+	}
+
+	@BeforeUpdate()
+	beforeUpdate(){
+		this.modified = DateTime.now();
+	}
+
+	@BeforeInsert()
+	beforeInsert(){
+		this.added = DateTime.now();
+	}
+
 	@Field() @IsUUID()
 	@PrimaryGeneratedColumn("uuid")
 	uuid!: string;
 
-	@Field() @IsDate()
-	@CreateDateColumn({
-		nullable: false,
-	})
-	added!: Date;
-
-	@Field() @IsDate()
-	@UpdateDateColumn({
-		nullable: false,
-	})
-	modified!: Date;
-
-	@Field() @IsDate()
+	@Field(type => GQLDateTime) @IsDate()
 	@Column({
+		type: "integer",
 		nullable: false,
+		transformer: DateTimeTransformer,
+
 	})
-	documentDate!: Date;
+	added!: DateTime;
+
+	@Field(type => GQLDateTime) @IsDate()
+	@Column({
+		type: "integer",
+		nullable: false,
+		transformer: DateTimeTransformer
+	})
+	modified!: DateTime;
+
+	@Field(type => GQLDateTime) @IsDate()
+	@Column({
+		type: 'integer',
+		nullable: false,
+		transformer: DateTimeTransformer
+	})
+	documentDate!: DateTime;
 
 	@Field(type=>[File])
-	@OneToMany(type => File, file => file.document, { lazy: true })
+	@OneToMany(type => File, file => file.document, { lazy: true, onDelete: 'CASCADE'})
 	files!: Promise<File[]>;
 
 	@Field() @IsString() @MinLength(1) @MaxLength(40)
@@ -108,10 +162,10 @@ export class Document extends BaseEntity {
 		return {};
 	}
 
-	public static async newDoc() {
-		let now = new Date();
+	public static async newDoc(title: string = "New Document") {
+		let now = DateTime.now();
 		let doc = new Document();
-		doc.title = "Neues Dokument";
+		doc.title = title;
 		doc.added = now;
 		doc.tags = [];
 		doc.documentDate = now;

@@ -15,7 +15,9 @@ export default function init(server: Server){
 			await tags[0].remove();
 			let docs = await Document.find();
 			for(let doc of docs){
-				let index = doc.tags.indexOf(req.params.tag);
+				let index = doc.tags.findIndex(t=>t.id==req.params.tag);
+				if(typeof doc.tags[0] == "string")
+					throw new Error('tags are strings');
 				if(index > -1){
 					doc.tags.splice(index);
 					doc.save();

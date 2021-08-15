@@ -1,10 +1,9 @@
 import * as express from "express";
 import * as Path from "path";
-import * as FS from "fs";
-import {createConnection, TableForeignKey} from "typeorm";
-import * as Util from "util";
+import * as FS from "fs-extra";
+import {createConnection} from "typeorm";
 import * as JOI from "joi";
-import * as bodyParser from "body-parser";
+import {json as JSONParser} from "body-parser";
 import * as Multer from "multer";
 const ZIP = require("express-easy-zip");
 import { buildSchema } from "type-graphql";
@@ -15,62 +14,78 @@ import initMetaRoutes from "./routes/meta";
 import initUiRoutes from "./routes/ui";
 import initDocRoutes from "./routes/docs";
 import initFileRoutes from "./routes/files";
-import { Server } from "./server";
+import { Server, setServer } from "./server";
 import { Meta } from "./entities/meta";
 
+const configPath = Path.join(process.cwd(),"config.json");
+
 const {value, error} = JOI.object({
-	mysql: JOI.object({
-		host: JOI.string().min(1).required(),
-		user: JOI.string().min(1).required(),
-		password: JOI.string().min(1).required(),
-		database: JOI.string().min(1).required(),
-	}).required(),
-	paths: JOI.object({
-		files: JOI.string().min(1).required(),
-        thumbnails: JOI.string().min(1).required(),
-    	tmp: JOI.string().min(1).required()
-	}).required(),
+	data: JOI.string().min(1).required(),
+	tmp: JOI.string().min(1).optional(),
 	server: JOI.object({
 		port: JOI.number().min(1).max(0xFFFF).default(3000)
 	}).default({port: 3000})
-}).validate(require(Path.join(process.cwd(),"config.json")));
+}).validate(require(configPath));
+
+interface Config{
+	data: string,
+	tmp: string,
+	server: {
+		port: number
+	}
+}
 
 if(error){
 	console.error("Invalid config: ", error.message);
 	process.exit(-1);
 }
 
-const CONFIG = value;
+const CONFIG: Config = value;
+CONFIG.data = Path.resolve(Path.dirname(configPath), CONFIG.data);
+if(CONFIG.tmp){
+	CONFIG.tmp = Path.resolve(Path.dirname(configPath), CONFIG.tmp);
+}else{
+	CONFIG.tmp = Path.join(CONFIG.data, 'tmp');
+}
+
 const tsNode = Path.extname(__filename) == ".ts";
 
+async function checkDir(path: string){
+	let st: FS.Stats;
+	try{
+		st = await FS.stat(path);
+	}catch(e){
+		return false;
+	}
+	if(!st.isDirectory())
+		throw new Error(`Path "${path}" exists, but is not a directory!`);
+	return true;
+}
 
 async function init(){
 	const server : Server = {
-		tmpPath: CONFIG.paths.tmp,
-		filesPath: CONFIG.paths.files,
-		thumbnailPath: CONFIG.paths.thumbnails,
+		tmpPath: CONFIG.tmp,
+		filesPath: Path.join(CONFIG.data, 'files'),
+		thumbnailPath: Path.join(CONFIG.data, 'thumbnails'),
 		assetsPath: Path.join(__dirname,  "..", tsNode ? "../dist" : "", "public"),
-		upload: Multer({dest: CONFIG.paths.tmp}),
-		jsonParser: bodyParser.json(),
+		upload: Multer({dest: CONFIG.tmp}),
+		jsonParser: JSONParser(),
 		app: null!
 	}
-	if(!await Util.promisify(FS.exists)(server.filesPath)){
-		await Util.promisify(FS.mkdir)(server.filesPath);
+	setServer(server);
+	if(!await checkDir(server.filesPath)){
+		await FS.mkdirp(server.filesPath);
 	}
-	if(!await Util.promisify(FS.exists)(server.tmpPath)){
-		await Util.promisify(FS.mkdir)(server.tmpPath);
+	if(!await checkDir(server.tmpPath)){
+		await FS.mkdirp(server.tmpPath);
 	}
-	if(!await Util.promisify(FS.exists)(server.thumbnailPath)){
-		await Util.promisify(FS.mkdir)(server.thumbnailPath);
+	if(!await checkDir(server.thumbnailPath)){
+		await FS.mkdirp(server.thumbnailPath);
 	}
 	const db = 	await createConnection({
-		type: "mysql", 
-		database: CONFIG.mysql.database,
-		username: CONFIG.mysql.user,
-		password: CONFIG.mysql.password,
+		type: "better-sqlite3", 
+		database: Path.join(CONFIG.data, 'db.sqlite'),
 		synchronize: true,
-		//debug:true,
-		charset: "utf8",
 		entities: [__dirname+"/entities/*.js"],
 	});
 
@@ -114,7 +129,8 @@ async function init(){
 		//TODO
 	});
 
-	await new Promise((res,rej)=>server.app.listen(CONFIG.server.port, ()=>res()));
+	await new Promise<void>((res,rej)=>server.app.listen(CONFIG.server.port, ()=>res()));
+	console.log('Listening to http://0.0.0.0:'+CONFIG.server.port);
 }
 
 init();

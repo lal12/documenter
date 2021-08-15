@@ -62,7 +62,7 @@ class InboxView extends React.Component<InboxProps>{
             <div>
                 {this.state.files.length == 0 ? intl.get("noentries") : ""}
                 {this.state.files.map(f=>(
-                    <File filename={f.origFilename} 
+                    <File key={f.uuid} filename={f.origFilename} 
                         thumbnail={"/api/files/"+f.uuid+"/thumbnail"} 
                         checked={f.checked}
                         onChange={(c)=>{f.checked = c; this.setState({})}} />

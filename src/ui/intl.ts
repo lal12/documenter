@@ -1,4 +1,4 @@
-import Moment from "moment";
+import { DateTime, Settings } from "luxon";
 import Format from "string-format";
 
 interface LocaleData{
@@ -27,7 +27,7 @@ export default class Intl{
 	}
 
 	private constructor(private _lang: string){
-		Moment.locale(_lang);
+		Settings.defaultLocale = _lang;
 		this._format = Format.create({
 			upper: (s:string)=>s.toUpperCase(),
 			lower: (s:string)=>s.toLowerCase(),
@@ -51,20 +51,26 @@ export default class Intl{
 	get locale(){
 		return this._lang;
 	}
-	public date(data: Date){
+	public date(date: Date|DateTime){
+		if(date instanceof Date)
+			date = DateTime.fromJSDate(date);
 		if(this.data.dateFormat)
-			return Moment(data).format(this.data.dateFormat);
-		return Moment(data).format("LL");
+			return date.toFormat(this.data.dateFormat);
+		return date.toFormat("LL");
 	}
-	public time(data: Date){
+	public time(date: Date|DateTime){
+		if(date instanceof Date)
+			date = DateTime.fromJSDate(date);
 		if(this.data.timeFormat)
-			return Moment(data).format(this.data.timeFormat);
-		return Moment(data).format("LTS");
+			return date.toFormat(this.data.timeFormat);
+		return date.toFormat("LTS");
 	}
-	public datetime(data: Date){
+	public datetime(date: Date|DateTime){
+		if(date instanceof Date)
+			date = DateTime.fromJSDate(date);
 		if(this.data.datetimeFormat)
-			return Moment(data).format(this.data.datetimeFormat);
-		return Moment(data).format("LLL");
+			return date.toFormat(this.data.datetimeFormat);
+		return date.toFormat("LLL");
 	}
 	public number(no: number){
 		return no.toLocaleString(this._lang);

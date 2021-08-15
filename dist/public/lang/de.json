@@ -1,6 +1,6 @@
 {
-	"dateFormat": "DD.MM.YYYY",
-	"datetimeFormat": "DD.MM.YYYY HH:mm:ss",
+	"dateFormat": "d.MM.yyyy",
+	"datetimeFormat": "d.MM.yyyy HH:mm:ss",
 	"timeFormat": "HH:mm:ss",
 	"unknown": "(Unbekannter String)",
 	"lang": "de",

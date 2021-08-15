@@ -1,5 +1,4 @@
-import * as FS from "fs";
-import * as Util from "util";
+import * as FS from "fs-extra";
 import * as Path from "path";
 import * as Textract from "textract";
 import * as Tokenizer from "wink-tokenizer";
@@ -20,8 +19,8 @@ function textFromTxt(data:Buffer){
 	return data.toString("utf8");
 }
 
-export async function textFromFile(path: string, origFilename: string, useOCR: boolean = false): Promise<string>{
-	let data = (await Util.promisify(FS.readFile)(path));
+export async function textFromFile(path: string, origFilename: string): Promise<string>{
+	let data = await FS.readFile(path);
 	let ext = Path.extname(origFilename).substr(1);
 	switch(ext){
 		case "txt":
@@ -34,14 +33,9 @@ export async function textFromFile(path: string, origFilename: string, useOCR: b
 			return await extractTextFromBuffer(origFilename, data)
 		case 'pdf': // PDF file
 			let text = await extractTextFromBuffer(origFilename, data)
-			if(text.trim().replace(/[^\w]/, "").length > 2)
-				return text;
-		// PDF file which needs OCR
-		case 'png': // Image files
-		case 'jpg':
-			if(!useOCR)
-				throw new Error("Need OCR for PDF/PNG/JPG, but OCR is not enabled.")
-			
+			if(text.trim().replace(/[^\w]/, "").length < 2)
+				throw new Error('Cannot get text from '+path);
+			return text;
 		default:
 			throw new Error("Invalid file extension: "+ext);
 	}

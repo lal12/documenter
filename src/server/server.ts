@@ -7,7 +7,17 @@ export interface Server{
 	filesPath: string,
 	tmpPath: string,
 	assetsPath: string,
-	upload: Multer.Instance,
+	upload: Multer.Multer,
 	jsonParser: NextHandleFunction,
 	app: Express,
+}
+
+let server: Server;
+export function getServer(){
+	return server;
+}
+export function setServer(s: Server){
+	if(server)
+		throw new Error('server is already set!');
+	server = s;
 }

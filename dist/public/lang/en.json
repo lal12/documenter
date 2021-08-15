@@ -1,6 +1,6 @@
 {
-	"dateFormat": "YYYY/MM/DD",
-	"datetimeFormat": "YYYY/MM/DD hh:mm:ss A",
+	"dateFormat": "yyyy/MM/d",
+	"datetimeFormat": "yyyy/MM/d hh:mm:ss A",
 	"timeFormat": "hh:mm:ss A",
 	"unknown": "(Unknown string)",
 	"lang": "en",

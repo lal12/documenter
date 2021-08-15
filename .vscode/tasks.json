@@ -19,6 +19,9 @@
                 "-w",
                 "--config", "src/ui/webpack.config.js",
                 "--mode", "development"
+            ],
+            "problemMatcher": [
+                "$ts-webpack-watch"
             ]
         }
     ]

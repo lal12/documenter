@@ -4,6 +4,8 @@ import { Entity, BaseEntity, PrimaryColumn, Index, Column, OneToMany } from "typ
 
 import { IsString, MinLength, IsBoolean, IsIn } from "class-validator";
 import { MetaData } from "./metadata";
+import { DateTime } from "luxon";
+import { MetaValueType } from '../shared/types';
 
 @ObjectType("meta")
 @Entity("meta")
@@ -34,12 +36,11 @@ export class Meta extends BaseEntity {
 	deleteable!: boolean;
 
 	@Field() @IsIn(["date", "datetime", "string", "uint", "int", "decimal"])
-	@Column("enum", {
+	@Column("text", {
 		nullable: false,
-		enum: ["date", "datetime", "string", "uint", "int", "decimal"],
 		name: "type"
 	})
-	type!: "date" | "datetime" | "string" | "uint" | "int" | "decimal";
+	type!: MetaValueType;
 
 	@Field(tyle=>[MetaData])
 	@OneToMany(type => MetaData, md => md.meta, { lazy: true })
@@ -47,13 +48,14 @@ export class Meta extends BaseEntity {
 
 	public getType() {
 		switch (this.type) {
-			case "uint":
-			case "int":
-			case "decimal":
+			case MetaValueType.UINT:
+			case MetaValueType.INT:
+			case MetaValueType.DECIMAL:
 				return Number;
-			case "date":
-				return Date;
-			case "string":
+			case MetaValueType.DATE:
+			case MetaValueType.DATETIME:
+				return DateTime;
+			case MetaValueType.STRING:
 				return String;
 			default:
 				throw new Error("Unknown type: " + this.type);

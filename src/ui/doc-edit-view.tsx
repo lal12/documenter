@@ -3,15 +3,17 @@ import * as React from "react";
 import Button from "antd/lib/button";
 import Icon from "antd/lib/icon";
 import Tabs from "antd/lib/tabs";
-import Moment from "moment";
 import Input from "antd/lib/input";
-import DateTime from "react-datetime";
 import {EditInput, EditTextInput, EditNumberInput, EditDateInput, EditDateTimeInput} from "./edit-input"
 import Tag from "antd/lib/tag";
 import Select from "react-select";
 import Divider from "antd/lib/divider";
+import {MetaValueType} from '../shared/types';
 
 import {intl} from "./intl";
+import { DateTime } from "luxon";
+import DatePicker from 'react-datepicker';
+import { Col, Row } from "antd";
 
 type tag = {
 	id: string,
@@ -27,15 +29,15 @@ interface metadata<arr extends Boolean> extends meta<arr>{
 interface meta<arr extends Boolean>{
 	id: string,
 	title: string,
-	type: string,
+	type: MetaValueType,
 	optional: boolean,
 	isArray: arr,
 }
 interface document{
 	uuid: string,
-	added: Date,
-	modified: Date,
-	documentDate: Date,
+	added: DateTime,
+	modified: DateTime,
+	documentDate: DateTime,
 	attributes: anyMetadata[],
 	title: string,
 	tags: string[],
@@ -47,18 +49,18 @@ interface document{
 	}[]
 };
 
-function strToVal(val: string, type: string): string|number|Date{
+function strToVal(val: string, type: MetaValueType): string|number|DateTime{
 	switch(type){
-		case "string":
+		case MetaValueType.STRING:
 			return val;
-		case "uint":
-		case "int":
+		case MetaValueType.UINT:
+		case MetaValueType.INT:
 			return parseInt(val);
-		case "decimal":
+		case MetaValueType.DECIMAL:
 			return parseFloat(val);
-		case "date":
-		case "datetime":
-			return new Date(val);
+		case MetaValueType.DATE:
+		case MetaValueType.DATETIME:
+			return DateTime.fromMillis(parseInt(val));
 		default:
 			throw new Error("Unknown type: "+type);
 	}
@@ -68,11 +70,33 @@ class EditMetadataArray extends React.Component<metadata<true>>{
 
 }
 
+const CollapseLongText = (props: {text: string, maxLength: number})=>{
+	const [collapsed, setCollapse] = React.useState(true);
+	if(props.text.length <= props.maxLength)
+		return <span>{props.text}</span>;
+	const style = {
+		textDecoration: 'underline',
+		cursor: 'pointer',
+		color: 'blue'
+	}
+	if(collapsed){
+		return <span>
+			{props.text.substr(0, props.maxLength-3)}...&nbsp;&nbsp;&nbsp;
+			<span style={style} onClick={()=>setCollapse(false)}>&lt;Mehr&gt;</span>
+		</span>;
+	}else{
+		return <span>
+			{props.text}<br/>
+			<span style={style} onClick={()=>setCollapse(true)}>&lt;Weniger&gt;</span>
+		</span>;
+	}
+} 
+
 class EditMetadata extends React.Component<{
 	md: metadata<false>, 
-	onSave?: (v:string|number|Date)=>void
+	onSave?: (v:string|number|DateTime)=>void
 }>{
-	save(value: string|number|Date){
+	save(value: string|number|DateTime){
 		if(this.props.onSave){
 			this.props.onSave(value);
 		}
@@ -97,12 +121,12 @@ class EditMetadata extends React.Component<{
 				onSave={v=>this.save(v)} />;
 		}else if(md.type == "date"){
 			return <EditDateInput 
-				initValue={Moment(val)} 
-				onSave={v=>this.save(v.toDate())} />
+				initValue={val as DateTime} 
+				onSave={v=>this.save(v)} />
 		}else if(md.type == "datetime"){
 			return <EditDateTimeInput 
-				initValue={Moment(val)}
-				onSave={v=>this.save(v.toDate())} />
+				initValue={val as DateTime}
+				onSave={v=>this.save(v)} />
 		}
 	}
 }
@@ -148,9 +172,9 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 			}
 		}`, {uuid: this.state.uuid});
 		data.document.tags = data.document.tags.map((t:any)=>t.id);
-		data.document.added = new Date(data.document.added);
-		data.document.modified = new Date(data.document.modified);
-		data.document.documentDate = new Date(data.document.documentDate);
+		data.document.added = DateTime.fromMillis(data.document.added);
+		data.document.modified = DateTime.fromMillis(data.document.modified);
+		data.document.documentDate = DateTime.fromMillis(data.document.documentDate);
 		this.setState({tags: data.tags, doc: data.document});
 	}
 	id2tag(id:string){
@@ -164,7 +188,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 				metadata[m.id] = m.value!;
 			let docPart = {
 				title: doc.title,
-				documentDate: doc.documentDate,
+				documentDate: doc.documentDate.toMillis(),
 				tags: doc.tags,
 				metadata
 			}
@@ -177,9 +201,9 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 			this.save();
 		}
 	}
-	saveDocDate(date:string){
+	saveDocDate(date: DateTime){
 		if(this.state.doc){
-			this.state.doc.documentDate = new Date(date);
+			this.state.doc.documentDate = date;
 			this.save();
 		}
 	}
@@ -234,16 +258,21 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 	}
 	renderAttribute(md: anyMetadata, i:number){
 		if(!md.isArray){
-			return <tr>
+			return <tr key={md.id}>
 				<td><b>{md.title+": "}</b></td>
 				<td>
 				<EditMetadata 
 					md={md as any}
-					onSave={(v:Date|number|string)=>{
-						if(v instanceof Date)
-							v = v.toISOString();
-						else
+					onSave={(v:DateTime|number|string)=>{
+						if(v instanceof DateTime){
+							if(md.type == 'date' || md.type == 'datetime'){
+								v = v.toMillis();
+							}else{
+								throw new Error(`Invalid type/value combination! type ${md.type} and DateTime object`);
+							}
+						}else{
 							v = v.toString();
+						}
 						this.saveAttribute({...md, value: [v]}, i)}
 					} />
 				</td>
@@ -251,12 +280,12 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 		}
 	}
 	renderEditDocDate(doc: document){
-		return(<EditInput<string>
-			initValue={doc.documentDate.toISOString()}
+		return(<EditInput<DateTime>
+			initValue={doc.documentDate}
 			onSave={(v)=>this.saveDocDate(v)}
-			renderDisplay={(v: string, edit: ()=>void)=>(
+			renderDisplay={(v: DateTime, edit: ()=>void)=>(
 				<React.Fragment>
-					{(new Date(v)).toLocaleString()}
+					{intl.datetime(v)}
 					<Button onClick={edit}
 						style={{marginLeft: "6px"}} type="primary" size="small"
 					>
@@ -264,9 +293,9 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 					</Button>
 				</React.Fragment>
 			)} 
-			renderEdit={(v: string, save: ()=>void, abort: ()=>void, change:(v:string)=>void)=>(
+			renderEdit={(v: DateTime, save: ()=>void, abort: ()=>void, change:(v: DateTime)=>void)=>(
 				<React.Fragment>
-					<DateTime onChange={(e)=>change(e as string)} value={new Date(v)} locale="de"/>
+					<DatePicker onChange={(e)=>change(DateTime.fromJSDate(e as Date))} selected={v.toJSDate()} locale="de"/>
 					<Button onClick={save} type="primary"><Icon type="save" /></Button>
 					<Button onClick={abort} type="danger"><Icon type="close" /></Button>
 				</React.Fragment>
@@ -284,7 +313,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 			onSave={tags=>this.saveTags(tags)}
 			renderDisplay={(ids: string[], edit: ()=>void)=>(
 				<React.Fragment>
-					{ids.map(id=>(<Tag>{(this.id2tag(id) as tag || {title: ""}).title}</Tag>))}
+					{ids.map(id=>(<Tag key={id}>{(this.id2tag(id) as tag || {title: ""}).title}</Tag>))}
 					<Button onClick={edit}
 						style={{marginLeft: "6px"}}
 						type="primary" size="small"
@@ -344,37 +373,44 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 			</div>
 			<Tabs defaultActiveKey="1">
 				<Tabs.TabPane tab={intl.get("details")} key="1">
-					<table style={{overflow: "visible"}}><tbody>
-						<tr>
-							<td><b>{intl.get("title")}: </b></td>
-							<td>{this.renderEditTitle(doc)}</td>
-						</tr><tr>
-							<td><b>{intl.get("files")}: </b></td>
-							<td>
-								{doc.files.map(f=>(<span style={{marginRight: "10px"}}>
-									<a href={"/api/files/"+f.uuid}>
-										{f.origFilename}
-									</a>
-									{ f.isTextFile != false ? (<React.Fragment>&nbsp;(<a href={"/api/files/"+f.uuid+"/ocr"}>OCR</a>)</React.Fragment>) : null }
-								</span>))}
-							</td>
-						</tr><tr>
-							<td><b>{intl.get("created")}: </b></td>
-							<td>{this.renderEditDocDate(doc)}</td>
-						</tr><tr>
-							<td><b>{intl.get("added")}: </b></td>
-							<td>{intl.datetime(doc.added)}</td>
-						</tr><tr>
-							<td><b>{intl.get("modified")}: </b></td>
-							<td>{intl.datetime(doc.modified)}</td>
-						</tr><tr>
-							<td><b>{intl.get("keywords")}: </b></td>
-							<td>{keywords.join(", ")}</td>
-						</tr><tr>
-							<td><b>{intl.get("tags")}: </b></td>
-							<td>{this.renderEditTags(doc)}</td>
-						</tr>
-					</tbody></table>
+					<Row>
+						<Col md={17}>
+							<table style={{overflow: "visible"}}><tbody>
+								<tr>
+									<td><b>{intl.get("title")}: </b></td>
+									<td>{this.renderEditTitle(doc)}</td>
+								</tr><tr>
+									<td><b>{intl.get("files")}: </b></td>
+									<td>
+										{doc.files.map(f=>(<span key={f.uuid} style={{marginRight: "10px"}}>
+											<a href={"/api/files/"+f.uuid}>
+												{f.origFilename}
+											</a>
+											{ f.isTextFile != false ? (<React.Fragment>&nbsp;(<a href={"/api/files/"+f.uuid+"/ocr"}>OCR</a>)</React.Fragment>) : null }
+										</span>))}
+									</td>
+								</tr><tr>
+									<td><b>{intl.get("created")}: </b></td>
+									<td>{this.renderEditDocDate(doc)}</td>
+								</tr><tr>
+									<td><b>{intl.get("added")}: </b></td>
+									<td>{intl.datetime(doc.added)}</td>
+								</tr><tr>
+									<td><b>{intl.get("modified")}: </b></td>
+									<td>{intl.datetime(doc.modified)}</td>
+								</tr><tr>
+									<td><b>{intl.get("keywords")}: </b></td>
+									<td><CollapseLongText text={keywords.join(", ")} maxLength={450} /></td>
+								</tr><tr>
+									<td><b>{intl.get("tags")}: </b></td>
+									<td>{this.renderEditTags(doc)}</td>
+								</tr>
+							</tbody></table>
+						</Col>
+						<Col md={7}>
+							{doc.files.map(f=><img key={f.uuid} src={"/api/files/"+f.uuid+'/thumbnail'} />)}
+						</Col>
+					</Row>
 					<Divider style={{marginTop: "15px"}} />
 					<h2>{intl.get("menu_meta")}</h2>
 					<table><tbody>

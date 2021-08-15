@@ -72,7 +72,7 @@ class App extends React.Component{
 }
 
 Promise.all([
-	new Promise((res,rej)=>{document.onreadystatechange = ()=>res()}),
+	new Promise<void>((res,rej)=>{document.onreadystatechange = ()=>res()}),
 	intlCreatePromise
 ]).then(()=>{
 	render(<App />, document.getElementById("root"));

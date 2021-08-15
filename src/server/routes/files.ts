@@ -1,5 +1,4 @@
 
-import * as Util from "util";
 import * as Path from "path";
 import * as FS from "fs";
 import * as Multer from "multer";
@@ -20,7 +19,7 @@ export default function init(server: Server){
 	})
 	server.app.get("/api/files/:uuid/ocr", async (req,res)=>{
 		let file = await File.findOne({uuid: req.params.uuid});
-		if(!file || file.isTextFile != false){
+		if(!file || file.isTextFile === true){
 			res.status(404).end();
 		}else{
 			let ocrpath = Path.join(server.filesPath, file.uuid+".ocr.pdf");
@@ -42,12 +41,7 @@ export default function init(server: Server){
 		if(!file){
 			res.status(404).end();
 		}else{
-			try{
-				await Util.promisify(FS.unlink)(Path.join(server.filesPath, file.filename));
-			}catch(e){
-				console.warn("File could not be deleted: ",e,file)
-			}
-			await file.remove();
+			await file.remove(); // file (and thumbnail) on fs should be deleted here automatically
 			res.end();
 		}
     })

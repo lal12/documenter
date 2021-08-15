@@ -32,7 +32,7 @@ export default function init(server: Server){
 			title: JOI.string().min(1).required(), 
 			isArray: JOI.bool().required(),
 			optional: JOI.bool().required(),
-			type: JOI.string().allow([
+			type: JOI.string().valid(...[
 				"date","string","uint","int","decimal"
 			]).required()
 		}).validate(req.body);

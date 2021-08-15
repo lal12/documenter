@@ -1,9 +1,6 @@
-import {Express} from "express";
-import { NextHandleFunction } from "connect";
 import * as JOI from "joi";
-import * as Util from "util";
 import * as Path from "path";
-import * as FS from "fs";
+import * as FS from "fs-extra";
 import * as Multer from "multer";
 import { textFromFile, keywordsFromText, insertNonExistingKeywords } from "../keywords";
 import { Server } from "../server";
@@ -13,6 +10,7 @@ import { Meta } from "../entities/meta";
 import { MetaData } from "../entities/metadata";
 import { Tag } from "../entities/tag";
 import { fileTypes, File } from "../entities/file";
+import { DateTime } from "luxon";
 
 export default function init(server: Server){
 	const app = server.app;
@@ -41,10 +39,10 @@ export default function init(server: Server){
 		metas.forEach(m=>{
 			switch(m.type){
 				case 'date':
-					allowedMetaData[m.id] = JOI.date().iso();
+					allowedMetaData[m.id] = JOI.date().timestamp();
 				break;
 				case 'datetime':
-					allowedMetaData[m.id] = JOI.date().iso();
+					allowedMetaData[m.id] = JOI.date().timestamp();
 				break;
 				case 'decimal':
 					allowedMetaData[m.id] = JOI.number();
@@ -67,7 +65,7 @@ export default function init(server: Server){
 		})
 		let {value, error} = JOI.object({
 			title: JOI.string().min(1).optional(),
-			documentDate: JOI.date().iso().optional(),
+			documentDate: JOI.date().timestamp().optional(),
 			tags: JOI.array().items(JOI.string()).optional(),
 			metadata: allowedMetaData
 		}).validate(req.body);
@@ -127,11 +125,11 @@ export default function init(server: Server){
 				doc.tags.push(tag);
 			}
 		}
-		if(value.documentDate){
-			doc.documentDate = new Date(value.documentDate);
+		if(value.documentDate){ // joi converts to js date
+			doc.documentDate = DateTime.fromJSDate(value.documentDate);
 		}
 		try{
-		await doc.save();
+			await doc.save();
 		}catch(e){
 			debugger;
 		}
@@ -139,18 +137,29 @@ export default function init(server: Server){
 	})
 	async function postProcessFile(f: File){
 		const filepath = Path.join(server.filesPath, f.filename);
-		let text;
-		if(!f.isTextFile){
-			let ocrFilePath = Path.join(server.filesPath, Path.basename(f.filename, f.filetype)+"ocr");
-			await runOCR(filepath, ocrFilePath);
-			ocrFilePath += ".pdf"; // .pdf is automatically appended by tesseract!
-			let ocrOrigFilename = f.origFilename.split(".").slice(0,-1).join(".")+".ocr.pdf";
-			text = await textFromFile(ocrFilePath, ocrOrigFilename);
-		}else{
-			text = await textFromFile(filepath, f.origFilename);
+		try{
+			let text;
+			if(!f.isTextFile){
+				let ocrFilePath = Path.join(server.filesPath, Path.basename(f.filename, f.filetype)+"ocr");
+				await runOCR(filepath, ocrFilePath);
+				ocrFilePath += ".pdf"; // .pdf is automatically appended by tesseract!
+				let ocrOrigFilename = Path.basename(f.origFilename, f.filetype)+".ocr.pdf";
+				try{
+					text = await textFromFile(ocrFilePath, ocrOrigFilename);
+				}catch(e){ // ocr file is useless
+					await FS.unlink(ocrFilePath);
+					throw e;
+				}
+			}else{
+				text = await textFromFile(filepath, f.origFilename);
+			}
+			let kw = keywordsFromText(text);
+			f.keywords = Promise.resolve(await insertNonExistingKeywords(kw));
+			return true;
+		}catch(e){
+			console.error('failed to postprocess file: ', e);
+			return false;
 		}
-		let kw = keywordsFromText(text);
-		f.keywords = Promise.resolve(await insertNonExistingKeywords(kw));
 	}
 	app.post("/api/docs/upload", server.upload.array("files", 20), async (req, res)=>{
 		let files = (req.files as any)as Express.Multer.File[];
@@ -162,7 +171,7 @@ export default function init(server: Server){
 				return;
 			}
 		}
-		let doc = await Document.newDoc();
+		let doc = await Document.newDoc(files[0].originalname);
 		await doc.save();
 		try{
 			let promises = files.map(async f=>{
@@ -180,6 +189,7 @@ export default function init(server: Server){
 			let kws = await Promise.all(promises);
 			res.json({uuid: doc.uuid}).end()
 		}catch(e){
+			console.error('Failed to create document', e)
 			await doc.remove();
 			res.status(500);
 		}
@@ -212,10 +222,7 @@ export default function init(server: Server){
 		if(!doc){
 			res.status(404).end();
 		}else{
-			let files = await doc.files;
-			files.forEach(f=>Util.promisify(FS.unlink)(Path.join(server.filesPath, f.filename)))
-			await Promise.all(files.map(f=>f.remove()));
-			await doc.remove();
+			await doc.remove(); // files in db and on fs should be deleted here automatically
 			res.end();
 		}
 	})

@@ -11,6 +11,7 @@ import {Link, withRouter} from "react-router-dom";
 import {intl} from "./intl";
 import Divider from "antd/lib/divider";
 import Search from "antd/lib/input/Search";
+import { DateTime } from "luxon";
 
 type tag = {
 	id: string,
@@ -116,9 +117,9 @@ class DocsView extends React.Component<DocsProps>{
 					<Tag key={t.id}>{t.title}</Tag>
 				))} />
 				<Column title={intl.get("created")} key="documentDate" dataIndex="documentDate"
-					render={d=>intl.date(d)} />
+					render={d=>intl.date(DateTime.fromMillis(d))} />
 				<Column title={intl.get("added")} key="added" dataIndex="added" 
-					render={d=>intl.date(d)} />
+					render={d=>intl.date(DateTime.fromMillis(d))} />
 				<Column render={(uuid,doc: document)=>{
 					return (<React.Fragment>
 						<Link to={"/ui/docs/"+uuid}>
