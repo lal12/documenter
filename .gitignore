@@ -1,5 +1,5 @@
 /node_modules
-/dist/public/ui.js
+/dist/public/ui.js*
 /dist/server
 /package-lock.json
 /data
