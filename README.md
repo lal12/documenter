@@ -5,8 +5,6 @@ Documenter is small but useful document management system, ideal for usage in yo
 ## Features
 
 - Add and manage documents
-- Add tags, date and custom attributes to each document
-- Add custom attributes of several types (date, string, boolean, number)
 - Search for documents by content and meta data
 - Supported file types: `pdf`, `txt`, `md`, `docx`, `xlsx`, `odt`, `ods`, `txt`
 - Scanned documents are OCRed (file types: `pdf`, `png`, `jpg`)

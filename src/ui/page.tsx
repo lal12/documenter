@@ -5,7 +5,6 @@ import * as React from "react";
 import {BrowserRouter, Route, NavLink, withRouter, useLocation} from "react-router-dom";
 import { QueryParamProvider } from 'use-query-params';
 
-import MetaView from "./meta-view";
 import TagView from "./tag-view";
 import DocsView from "./docs-view";
 import DocEditView from "./doc-edit-view";
@@ -38,11 +37,6 @@ const AppMenu = ()=>{
 				{intl.get("menu_tags")}
 			</NavLink>
 		</Menu.Item>
-		<Menu.Item key="/ui/meta">
-			<NavLink to="/ui/meta">
-				{intl.get("menu_meta")}
-			</NavLink>
-		</Menu.Item>
 	</Menu>;
 }
 
@@ -58,7 +52,6 @@ const App = ()=>{
 			<Route path="/ui/docs" exact component={DocsView} />
 			<Route path="/ui/inbox" exact component={InboxView} />
 			<Route path="/ui/tags" exact component={TagView} />
-			<Route path="/ui/meta" exact component={MetaView} />
 		</Layout.Content>
 		<Layout.Footer></Layout.Footer>
 	</Layout></QueryParamProvider></BrowserRouter>;

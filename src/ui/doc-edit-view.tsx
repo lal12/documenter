@@ -6,13 +6,12 @@ import Tabs from "antd/lib/tabs";
 import Input from "antd/lib/input";
 import {EditInput, EditTextInput, EditNumberInput, EditDateInput, EditDateTimeInput} from "./edit-input"
 import Tag from "antd/lib/tag";
-import Select from "react-select";
+import Select from "antd/lib/select";
 import Divider from "antd/lib/divider";
-import {MetaValueType} from '../shared/types';
 
 import {intl} from "./intl";
 import { DateTime } from "luxon";
-import DatePicker, { registerLocale } from 'react-datepicker';
+import { registerLocale } from 'react-datepicker';
 import { Col, Row } from "antd";
 
 import de from 'date-fns/locale/de';
@@ -25,25 +24,11 @@ type tag = {
 	color: string
 }
 
-type anyMetadata = metadata<true>|metadata<false>;
-
-interface metadata<arr extends Boolean> extends meta<arr>{
-	value: string[]
-}
-
-interface meta<arr extends Boolean>{
-	id: string,
-	title: string,
-	type: MetaValueType,
-	required: boolean,
-	isArray: arr,
-}
 interface document{
 	uuid: string,
 	added: DateTime,
 	modified: DateTime,
 	documentDate: DateTime,
-	attributes: anyMetadata[],
 	title: string,
 	tags: string[],
 	files: {
@@ -54,26 +39,6 @@ interface document{
 	}[]
 };
 
-function strToVal(val: string, type: MetaValueType): string|number|DateTime{
-	switch(type){
-		case MetaValueType.STRING:
-			return val;
-		case MetaValueType.UINT:
-		case MetaValueType.INT:
-			return parseInt(val);
-		case MetaValueType.DECIMAL:
-			return parseFloat(val);
-		case MetaValueType.DATE:
-		case MetaValueType.DATETIME:
-			return DateTime.fromMillis(parseInt(val));
-		default:
-			throw new Error("Unknown type: "+type);
-	}
-}
-
-class EditMetadataArray extends React.Component<metadata<true>>{
-
-}
 
 const CollapseLongText = (props: {text: string, maxLength: number})=>{
 	const [collapsed, setCollapse] = React.useState(true);
@@ -97,45 +62,6 @@ const CollapseLongText = (props: {text: string, maxLength: number})=>{
 	}
 } 
 
-class EditMetadata extends React.Component<{
-	md: metadata<false>, 
-	onSave?: (v:string|number|DateTime)=>void
-}>{
-	save(value: string|number|DateTime){
-		if(this.props.onSave){
-			this.props.onSave(value);
-		}
-	}
-	render(){
-		let md = this.props.md;
-		let val = strToVal(md.value[0], md.type);
-		if(md.type == "string"){
-			return <EditTextInput 
-				initValue={md.value[0]} 
-				label="" type="string"
-				onSave={v=>this.save(v)} />;
-		}else if(md.type == "uint" || md.type == "int" || md.type == "decimal"){
-			let min, step;
-			if(md.type == "uint")
-				min = 0;
-			if(md.type == "int" || md.type == "uint")
-				step = 1;
-			return <EditNumberInput  
-				initValue={val as number} 
-				min={min} step={step} 
-				onSave={v=>this.save(v)} />;
-		}else if(md.type == "date"){
-			return <EditDateInput 
-				initValue={val as DateTime} 
-				onSave={v=>this.save(v)} />
-		}else if(md.type == "datetime"){
-			return <EditDateTimeInput 
-				initValue={val as DateTime}
-				onSave={v=>this.save(v)} />
-		}
-	}
-}
-
 export default class DocEditView extends React.Component<{uuid: string}>{
 	state: {doc: document|null, tags: tag[], uuid: string};
 	constructor(props: {uuid: string}){
@@ -150,24 +76,16 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 			tags{
 				id
 				title
+				color
 			}
 			document(uuid:$uuid){
 				uuid
 				added
 				modified
 				documentDate
-				attributes{
-					id
-					title
-					type
-					required
-					isArray
-					value
-				}
 				title
 				tags{
 					id
-					title
 				}
 				files{
 					origFilename
@@ -188,14 +106,10 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 	save(){
 		let doc = this.state.doc;
 		if(doc){ 
-			let metadata : {[index:string]:string|string[]} = {};
-			for(let m of doc.attributes)
-				metadata[m.id] = m.value!;
 			let docPart = {
 				title: doc.title,
 				documentDate: doc.documentDate.toMillis(),
 				tags: doc.tags,
-				metadata
 			}
 			httpRequest("PUT", "/api/docs/"+doc.uuid, docPart).then(()=>this.refresh());
 		}
@@ -215,12 +129,6 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 	saveTags(tags:string[]){
 		if(this.state.doc){
 			this.state.doc.tags = tags;
-			this.save();
-		}
-	}
-	saveAttribute(md: anyMetadata, i: number){
-		if(this.state.doc){
-			this.state.doc.attributes[i] = md;
 			this.save();
 		}
 	}
@@ -261,37 +169,10 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 			)}
 		/>);
 	}
-	renderAttribute(md: anyMetadata, i:number){
-		if(!md.isArray){
-			return <tr key={md.id}>
-				<td><b>{md.title+": "}</b></td>
-				<td>
-				<EditMetadata 
-					md={md as any}
-					onSave={(v:DateTime|number|string)=>{
-						if(v instanceof DateTime){
-							if(md.type == 'date' || md.type == 'datetime'){
-								v = v.toMillis().toString();
-							}else{
-								throw new Error(`Invalid type/value combination! type ${md.type} and DateTime object`);
-							}
-						}else{
-							v = v.toString();
-						}
-						this.saveAttribute({...md, value: [v]}, i)}
-					} />
-				</td>
-			</tr>;
-		}
-	}
 	renderEditDocDate(doc: document){
 		return <EditDateTimeInput  initValue={doc.documentDate} onSave={v=>this.saveDocDate(v)} />
 	}
 	renderEditTags(doc:document){
-		const tags2vals = (tags:tag[])=>tags.map(t=>({label:t.title,value:t.id}));
-		const ids2vals = (ids:string[])=>ids.map(id=>({value:id,label:(this.id2tag(id) as tag).id}))
-		const vals2tags = (vals:{label:string,value:string}[])=>vals.map(v=>({id:v.value,title:v.label}));
-		const vals2ids = (vals:{label:string,value:string}[])=>vals.map(v=>v.value);
 		return(<EditInput<string[]> 
 			initValue={doc.tags}
 			onSave={tags=>this.saveTags(tags)}
@@ -309,11 +190,13 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 			</React.Fragment>} 
 			renderEdit={(ids:string[], save: ()=>void, abort: ()=>void, change:(v:string[])=>void)=>(
 				<React.Fragment>
-					<div style={{display: "inline-block"}}><Select isMulti
-						options={tags2vals(this.state.tags)} 
-						defaultValue={ids2vals(ids)}
-						onChange={(a:any)=>change(vals2ids(a))}
-						/></div>
+					<div style={{display: "inline-block"}}><Select mode="tags"
+						allowClear defaultValue={ids}
+						style={{width:200}}
+						onChange={(a:any)=>change(a)}
+					>
+						{this.state.tags.map(t=><Select.Option key={t.id} value={t.id}>{t.title}</Select.Option>)}
+					</Select></div>
 					<Button onClick={save}  
 						style={{display: "table-cell"}}
 						type="primary" size="large"
@@ -397,10 +280,6 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 						</Col>
 					</Row>
 					<Divider style={{marginTop: "15px"}} />
-					<h2>{intl.get("menu_meta")}</h2>
-					<table><tbody>
-						{this.state.doc.attributes.map((md,i)=>this.renderAttribute(md,i))}
-					</tbody></table>
 				</Tabs.TabPane>
 				{doc.files.map(f=><Tabs.TabPane key={f.uuid} tab={f.origFilename}>
 					<FileViewer file={f} />

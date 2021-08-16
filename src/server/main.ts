@@ -10,12 +10,10 @@ import { buildSchema } from "type-graphql";
 import * as graphqlHTTP from 'express-graphql';
 
 import initTagRoutes from "./routes/tags";
-import initMetaRoutes from "./routes/meta";
 import initUiRoutes from "./routes/ui";
 import initDocRoutes from "./routes/docs";
 import initFileRoutes from "./routes/files";
 import { Server, setServer } from "./server";
-import { Meta } from "./entities/meta";
 
 const configPath = Path.join(process.cwd(),"config.json");
 
@@ -89,24 +87,6 @@ async function init(){
 		entities: [__dirname+"/entities/*.js"],
 	});
 
-	// Initialize db
-	let metas = [
-		{
-			id: "received", title: "Empfangen", 
-			deletable: false, isArray: false,  type: "date", /*forTag: [],*/
-			required: false
-		}
-	];
-	try{
-		Promise.all(metas.map(m=>{
-			let add = new Meta();
-			for(let p in m)
-				(add as any)[p] = (m as any)[p];
-			return add.save();
-		}));
-	}catch(e){}
-
-
 	server.app = express();
 	server.app.use(ZIP());
 
@@ -122,7 +102,6 @@ async function init(){
 	}))
 
 	initTagRoutes(server);
-	initMetaRoutes(server)
 	initUiRoutes(server);
 	initDocRoutes(server)
 	initFileRoutes(server);

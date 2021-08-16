@@ -5,8 +5,6 @@ import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, OneToMany, Index, M
 import { IsUUID, IsDate, IsString, MinLength, MaxLength } from "class-validator";
 import { File } from "./file";
 import { Tag } from "./tag";
-import { MetaData } from "./metadata";
-import { Meta } from "./meta";
 import { keywordsFromText } from "../keywords";
 import { DateTime } from "luxon";
 import { GraphQLScalarType, Kind } from "graphql";
@@ -37,22 +35,6 @@ export const GQLDateTime = new GraphQLScalarType({
 	  return DateTime.fromMillis(parseInt(ast.value));
 	},
 });
-
-@ObjectType("DocumentAttribute")
-class DocumentAttribute{
-	@Field()
-	id!: string;
-	@Field()
-	title!: string;
-	@Field()
-	type!: string;
-	@Field()
-	required!: boolean;
-	@Field()
-	isArray!: boolean;
-	@Field(type=>[String])
-	value!: string[];
-}
 
 
 const DateTimeTransformer = {
@@ -120,43 +102,6 @@ export class Document extends BaseEntity {
 	@JoinTable()
 	tags!: Tag[];
 
-	@OneToMany(type => MetaData, md => md.document, {onDelete: "CASCADE"})
-	metadata!: Promise<MetaData[]>;
-
-	@Field(type=>[DocumentAttribute],{name: "attributes"})
-	public async getAttributes(){
-		type meta = {
-			id: string,
-			title: string,
-			type: string,
-			required: boolean,
-			isArray: boolean,
-			value?: string[]
-		};
-		let metadata: { [key: string]: meta } = {};
-		let mds = await this.metadata;
-		await Promise.all(mds.map(md => md.reload()))
-		for (let md of mds) {
-			if (!metadata[md.meta.id]) {
-				metadata[md.meta.id] = {
-					id: md.meta.id,
-					title: md.meta.title,
-					type: md.meta.type,
-					isArray: md.meta.isArray,
-					required: md.meta.required,
-					value: [md.data as string]
-				};
-			} else {
-				if (md.meta.isArray) {
-					(metadata[md.meta.id].value as string[]).push(md.data!);
-				} else {
-					console.warn("Multiple not array meta: ", md);
-				}
-			}
-		}
-		return Object.values(metadata);
-	}
-
 	public async toObj(){
 		throw new Error("Deprecated!")
 		return {};
@@ -171,13 +116,6 @@ export class Document extends BaseEntity {
 		doc.documentDate = now;
 		doc.modified = now;
 		await doc.save();
-		let metas = await Meta.find({ required: true });
-		for (let m of metas) {
-			let md = new MetaData();
-			md.meta = m;
-			md.document = doc;
-			await md.save();
-		}
 		return doc;
 	}
 }

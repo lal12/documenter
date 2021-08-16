@@ -4,11 +4,13 @@ import Card from "antd/lib/card"
 import Checkbox from "antd/lib/checkbox";
 import Button from "antd/lib/button";
 import {intl} from "./intl";
+import { useHistory } from "react-router-dom";
 
 
 type InboxProps = {match: any, location: any, history: any};
 
 const InboxView = (props: InboxProps)=>{
+    const history = useHistory();
     const [{inbox: files}, loadFiles] = useGQL<{inbox: Array<{uuid: string, origFilename: string}>}>(`{
         inbox{
             uuid
@@ -24,7 +26,7 @@ const InboxView = (props: InboxProps)=>{
 
     function createDoc(){
         httpRequest("POST", "/api/docs/inbox", checked)
-            .then(d=>this.props.history.push("/ui/docs/"+d.uuid))
+            .then(d=>history.push("/ui/docs/"+d.uuid))
     }
 
     function delFiles(){

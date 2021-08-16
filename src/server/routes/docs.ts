@@ -6,8 +6,6 @@ import { textFromFile, keywordsFromText, insertNonExistingKeywords } from "../ke
 import { Server } from "../server";
 import { move, runOCR } from "../utils";
 import { Document } from "../entities/document";
-import { Meta } from "../entities/meta";
-import { MetaData } from "../entities/metadata";
 import { Tag } from "../entities/tag";
 import { fileTypes, File } from "../entities/file";
 import { DateTime } from "luxon";
@@ -25,7 +23,6 @@ export default function init(server: Server){
 		}
 	})*/
 	app.put("/api/docs/:uuid", server.jsonParser, async (req, res)=>{
-		let metas = await Meta.find();
 		let doc = await Document.findOne({uuid: req.params.uuid}, {loadEagerRelations: true});
 		if(!doc){
 			res.status(404).end()
@@ -35,81 +32,14 @@ export default function init(server: Server){
 			res.status(422).send("Expecting json body!");
 			return;
 		}
-		let allowedMetaData : {[k:string]:JOI.Schema} = {};
-		metas.forEach(m=>{
-			switch(m.type){
-				case 'date':
-					allowedMetaData[m.id] = JOI.date().timestamp();
-				break;
-				case 'datetime':
-					allowedMetaData[m.id] = JOI.date().timestamp();
-				break;
-				case 'decimal':
-					allowedMetaData[m.id] = JOI.number();
-				break;
-				case 'int':
-					allowedMetaData[m.id] = JOI.number().integer();
-				break;
-				case 'string':
-					allowedMetaData[m.id] = JOI.string();
-				break;
-				case 'uint':
-					allowedMetaData[m.id] = JOI.number().integer().min(0);
-				break;
-			}
-			if(m.isArray)
-				allowedMetaData[m.id] = JOI.array().items(allowedMetaData[m.id]);
-			if(!m.required)
-				allowedMetaData[m.id] = allowedMetaData[m.id].optional();
-			
-		})
 		let {value, error} = JOI.object({
 			title: JOI.string().min(1).optional(),
 			documentDate: JOI.date().timestamp().optional(),
 			tags: JOI.array().items(JOI.string()).optional(),
-			metadata: allowedMetaData
 		}).validate(req.body);
 		if(error){
 			res.status(422).send(error.message);
 			return;
-		}
-		if(value.metadata){
-			doc.metadata = Promise.resolve([]);
-			await doc.save();
-			let promises : Promise<any>[] = [];
-			for(let m of metas){
-				let val = value.metadata[m.id];
-				if(val){
-					if(m.isArray){
-						(val as string[]).forEach((v,i)=>{
-							let md = new MetaData();
-							md.document = doc!;
-							if(m.isArray != Array.isArray(val)){
-								res.status(422).send("attr has invalid type: "+m.id);
-								return;
-							}					md.meta = m;
-							md.data = v;
-							md.index = i;
-							promises.push(md.save());
-						})
-					}else{
-						let md = new MetaData();
-						md.document = doc;
-						md.meta = m;
-						md.data = val;
-						promises.push(md.save());
-					}
-				}else if(m.required){
-					let md = new MetaData();
-					md.document = doc;
-					md.meta = m;
-					if(m.isArray){
-						md.index = 0;
-					}
-					promises.push(md.save());
-				}
-			}
-			await promises;
 		}
 		if(value.title){
 			doc.title = value.title;
