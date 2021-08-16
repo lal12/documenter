@@ -1,4 +1,5 @@
 import React from "react";
+import "antd/dist/antd.css";
 
 export function httpRequest(method: string, url: string, data?: any) : Promise<any>{
 	return new Promise((res,rej)=>{

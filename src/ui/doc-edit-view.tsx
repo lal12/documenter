@@ -21,7 +21,8 @@ registerLocale('de', de)
 
 type tag = {
 	id: string,
-	title: string
+	title: string,
+	color: string
 }
 
 type anyMetadata = metadata<true>|metadata<false>;
@@ -34,7 +35,7 @@ interface meta<arr extends Boolean>{
 	id: string,
 	title: string,
 	type: MetaValueType,
-	optional: boolean,
+	required: boolean,
 	isArray: arr,
 }
 interface document{
@@ -159,7 +160,7 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 					id
 					title
 					type
-					optional
+					required
 					isArray
 					value
 				}
@@ -294,17 +295,18 @@ export default class DocEditView extends React.Component<{uuid: string}>{
 		return(<EditInput<string[]> 
 			initValue={doc.tags}
 			onSave={tags=>this.saveTags(tags)}
-			renderDisplay={(ids: string[], edit: ()=>void)=>(
-				<React.Fragment>
-					{ids.map(id=>(<Tag key={id}>{(this.id2tag(id) as tag || {title: ""}).title}</Tag>))}
-					<Button onClick={edit}
-						style={{marginLeft: "6px"}}
-						type="primary" size="small"
-					>
-						<Icon type="edit" />
-					</Button>
-				</React.Fragment>
-			)} 
+			renderDisplay={(ids: string[], edit: ()=>void)=><React.Fragment>
+				{ids.map(id=>{
+					const t = this.id2tag(id) as tag || {title: '', color: 'CCCCCC'}
+					return <Tag color={'#'+t.color} key={id}>{t.title}</Tag>
+				})}
+				<Button onClick={edit}
+					style={{marginLeft: "6px"}}
+					type="primary" size="small"
+				>
+					<Icon type="edit" />
+				</Button>
+			</React.Fragment>} 
 			renderEdit={(ids:string[], save: ()=>void, abort: ()=>void, change:(v:string[])=>void)=>(
 				<React.Fragment>
 					<div style={{display: "inline-block"}}><Select isMulti

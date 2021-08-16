@@ -91,9 +91,11 @@ async function init(){
 
 	// Initialize db
 	let metas = [
-		{id: "received", title: "Empfangen", 
-		deleteable: false, isArray: false,
-		optional: true, type: "date"}
+		{
+			id: "received", title: "Empfangen", 
+			deletable: false, isArray: false,  type: "date", /*forTag: [],*/
+			required: false
+		}
 	];
 	try{
 		Promise.all(metas.map(m=>{
@@ -130,7 +132,7 @@ async function init(){
 	});
 
 	await new Promise<void>((res,rej)=>server.app.listen(CONFIG.server.port, ()=>res()));
-	console.log('Listening to http://0.0.0.0:'+CONFIG.server.port);
+	console.info('Listening to http://0.0.0.0:'+CONFIG.server.port);
 }
 
 init();

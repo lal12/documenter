@@ -41,7 +41,7 @@ export class File extends BaseEntity {
 
 	@Field(type=>Document)
 	@ManyToOne(type => Document, {
-		eager: true, nullable: true, onDelete: "CASCADE"
+		eager: true, nullable: true, onDelete: "RESTRICT"
 	})
 	@JoinColumn({ name: "documentUUID" })
 	document?: Document;

@@ -1,6 +1,6 @@
 import { ObjectType, Field, Resolver, Query, Arg, ArgsType, Args } from "type-graphql";
 
-import { Entity, BaseEntity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Column, OneToMany, Index, ManyToMany, JoinTable, AfterRemove, BeforeRemove, BeforeUpdate, BeforeInsert } from "typeorm";
+import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, OneToMany, Index, ManyToMany, JoinTable, BeforeRemove, BeforeUpdate, BeforeInsert } from "typeorm";
 
 import { IsUUID, IsDate, IsString, MinLength, MaxLength } from "class-validator";
 import { File } from "./file";
@@ -47,7 +47,7 @@ class DocumentAttribute{
 	@Field()
 	type!: string;
 	@Field()
-	optional!: boolean;
+	required!: boolean;
 	@Field()
 	isArray!: boolean;
 	@Field(type=>[String])
@@ -107,7 +107,7 @@ export class Document extends BaseEntity {
 	documentDate!: DateTime;
 
 	@Field(type=>[File])
-	@OneToMany(type => File, file => file.document, { lazy: true, onDelete: 'CASCADE'})
+	@OneToMany(type => File, file => file.document, { lazy: true, cascade: true, onDelete: 'CASCADE'})
 	files!: Promise<File[]>;
 
 	@Field() @IsString() @MinLength(1) @MaxLength(40)
@@ -129,7 +129,7 @@ export class Document extends BaseEntity {
 			id: string,
 			title: string,
 			type: string,
-			optional: boolean,
+			required: boolean,
 			isArray: boolean,
 			value?: string[]
 		};
@@ -143,7 +143,7 @@ export class Document extends BaseEntity {
 					title: md.meta.title,
 					type: md.meta.type,
 					isArray: md.meta.isArray,
-					optional: md.meta.optional,
+					required: md.meta.required,
 					value: [md.data as string]
 				};
 			} else {
@@ -171,8 +171,8 @@ export class Document extends BaseEntity {
 		doc.documentDate = now;
 		doc.modified = now;
 		await doc.save();
-		let meta = await Meta.find({ optional: false });
-		for (let m of meta) {
+		let metas = await Meta.find({ required: true });
+		for (let m of metas) {
 			let md = new MetaData();
 			md.meta = m;
 			md.document = doc;

@@ -1,11 +1,12 @@
-import { ObjectType, Field } from "type-graphql";
+import { ObjectType, Field, Resolver, Query } from "type-graphql";
 
-import { Entity, BaseEntity, PrimaryColumn, Index, Column, OneToMany } from "typeorm";
+import { Entity, BaseEntity, PrimaryColumn, Index, Column, OneToMany, ManyToMany, ManyToOne } from "typeorm";
 
 import { IsString, MinLength, IsBoolean, IsIn } from "class-validator";
 import { MetaData } from "./metadata";
 import { DateTime } from "luxon";
 import { MetaValueType } from '../shared/types';
+import { Tag } from "./tag";
 
 @ObjectType("meta")
 @Entity("meta")
@@ -27,13 +28,17 @@ export class Meta extends BaseEntity {
 	@Column()
 	isArray!: boolean;
 
-	@Field() @IsBoolean()
-	@Column()
-	optional!: boolean;
+	/*@Field(type=>Tag, {nullable: true}) 
+	@ManyToOne(type => Tag, {nullable: true, eager: true})
+	forTag?: Tag;*/
 
 	@Field() @IsBoolean()
 	@Column()
-	deleteable!: boolean;
+	required!: boolean;
+	
+	@Field() @IsBoolean()
+	@Column()
+	deletable!: boolean;
 
 	@Field() @IsIn(["date", "datetime", "string", "uint", "int", "decimal"])
 	@Column("text", {
@@ -60,5 +65,14 @@ export class Meta extends BaseEntity {
 			default:
 				throw new Error("Unknown type: " + this.type);
 		}
+	}
+}
+
+@Resolver(Meta)
+class MetaResolver{
+	@Query(returns=>[Meta])
+	async metas() : Promise<Meta[]>{
+		const metas = await Meta.find();
+		return metas;
 	}
 }

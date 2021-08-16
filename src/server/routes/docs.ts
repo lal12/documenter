@@ -59,7 +59,7 @@ export default function init(server: Server){
 			}
 			if(m.isArray)
 				allowedMetaData[m.id] = JOI.array().items(allowedMetaData[m.id]);
-			if(m.optional)
+			if(!m.required)
 				allowedMetaData[m.id] = allowedMetaData[m.id].optional();
 			
 		})
@@ -99,7 +99,7 @@ export default function init(server: Server){
 						md.data = val;
 						promises.push(md.save());
 					}
-				}else if(!m.optional){
+				}else if(m.required){
 					let md = new MetaData();
 					md.document = doc;
 					md.meta = m;

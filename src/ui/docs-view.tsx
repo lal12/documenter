@@ -18,7 +18,8 @@ import { Col, Row } from "antd";
 
 type tag = {
 	id: string,
-	title: string
+	title: string,
+	color: string
 }
 
 type document = {
@@ -49,6 +50,7 @@ const DocsView = (props: DocsProps)=>{
 			tags{
 				id
 				title
+				color
 			}
 			files{
 				uuid
@@ -126,7 +128,9 @@ const DocsView = (props: DocsProps)=>{
 					mode="tags" allowClear defaultValue={searchTags||[]} onChange={e=>{console.log(e);setSearchTags(e)}}
 					style={{ width: '100%', alignSelf: 'left', justifySelf: 'left' }}
 				>
-					{tags.map(t=><Select.Option key={t.id} value={t.id}>{t.title}</Select.Option>)}
+					{tags.map(t=><Select.Option key={t.id} value={t.id}>
+						<span style={{backgroundColor: '#'+t.color}}>{t.title}</span>
+					</Select.Option>)}
 				</Select>
 			</Col>
 			<Col md={5}>
@@ -141,15 +145,18 @@ const DocsView = (props: DocsProps)=>{
 		<Divider />
 		
 		<Table dataSource={docs} rowKey={d=>d.uuid}>
+			<Column key="thumbnail" render={(uuid, doc: document)=>
+				doc.files[0] ? <img style={{height: 120}} src={"/api/files/"+doc.files[0].uuid+"/thumbnail"} /> : null
+			} />
 			<Column key="title" dataIndex="title" render={(uuid, doc: document)=>
 				<React.Fragment>
-					<img style={{height: 120}} src={"/api/files/"+doc.files[0].uuid+"/thumbnail"} />
+					
 					&nbsp;&nbsp;
 					<span>{doc.title}</span>
 				</React.Fragment>
 			} />
 			<Column key="tags" dataIndex="tags" render={tags=>tags.map((t:any)=>(
-				<Tag key={t.id}>{t.title}</Tag>
+				<Tag color={'#'+t.color} key={t.id}>{t.title}</Tag>
 			))} />
 			<Column title={intl.get("created")} key="documentDate" dataIndex="documentDate"
 				render={d=>intl.date(DateTime.fromMillis(d))} />

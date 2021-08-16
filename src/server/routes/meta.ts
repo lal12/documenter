@@ -1,22 +1,16 @@
-import {Express} from "express";
-import { NextHandleFunction } from "connect";
 import * as JOI from "joi";
 import { Server } from "../server";
 import { Meta } from "../entities/meta";
 
 export default function init(server: Server){
 	const app = server.app;
-    // Meta get, delete, add
-	app.get('/api/metas', async (req, res)=>{
-		let metas = await Meta.find();
-		res.json(metas).end();
-	});
+    // Meta delete, add
 	app.delete('/api/metas/:meta', async (req, res)=>{
 		let meta = await Meta.find({id: req.params.meta});
 		if(meta.length == 0){
 			res.status(404).send("Meta not found");
-		}else if(!meta[0].deleteable){
-			res.status(403).send("Meta is not deleteable");
+		}else if(!meta[0].deletable){
+			res.status(403).send("Meta is not deletable");
 		}else{
 			await meta[0].remove();
 			res.status(200);
@@ -28,13 +22,14 @@ export default function init(server: Server){
 			res.status(422).send("Expecting json body!");
 			return;
 		}
-		let {value: { title, isArray, optional, type}, error} = JOI.object({ 
+		let {value: { title, isArray, required, type, /*forTag*/}, error} = JOI.object({ 
 			title: JOI.string().min(1).required(), 
 			isArray: JOI.bool().required(),
-			optional: JOI.bool().required(),
+			required: JOI.bool().required(),
 			type: JOI.string().valid(...[
 				"date","string","uint","int","decimal"
-			]).required()
+			]).required(),
+			//forTag: JOI.array().items(JOI.string()).allow(null)
 		}).validate(req.body);
 		if(error){
 			res.status(422).send(error.message);
@@ -49,9 +44,10 @@ export default function init(server: Server){
 		meta.id = id;
 		meta.title = title;
 		meta.isArray = isArray;
-		meta.deleteable = true;
+		meta.deletable = true;
 		meta.type = type;
-		meta.optional = optional;
+		meta.required = required;
+		//meta.forTag = forTag;
 		await meta.save();
 		res.end();
 	})

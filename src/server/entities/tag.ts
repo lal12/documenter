@@ -1,8 +1,8 @@
-import { ObjectType, Field, Resolver, Query, Arg, Int } from "type-graphql";
+import { ObjectType, Field, Resolver, Query, Arg } from "type-graphql";
 
 import { Entity, BaseEntity, PrimaryColumn, Index, Column, ManyToMany } from "typeorm";
 
-import { IsString, MinLength, MaxLength } from "class-validator";
+import { IsString, MinLength, MaxLength, Length } from "class-validator";
 
 import { Document } from "./document";
 
@@ -21,6 +21,11 @@ export class Tag extends BaseEntity {
 	@Index({ fulltext: true })
 	@Column("varchar")
 	title!: string;
+
+	@Field() @IsString() @Length(6)
+	@Index({ fulltext: true })
+	@Column("varchar")
+	color!: string;
 
 	@Field(type=>[Document])
 	@ManyToMany(type => Document, d => d.tags, { lazy: true })

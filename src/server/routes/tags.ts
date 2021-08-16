@@ -35,7 +35,8 @@ export default function init(server: Server){
 		let {value, error} = JOI.object({
 			"id": JOI.string().min(1).max(20)
 				.regex(/[a-z0-9]+/).required(),
-			"title": JOI.string().min(1).required()
+			"title": JOI.string().min(1).required(),
+			"color": JOI.string().regex(/^[A-F0-9]{6}$/).required()
 		}).validate(req.body);
 		if(error){
 			res.status(422).send(error.message);
@@ -44,6 +45,7 @@ export default function init(server: Server){
 		let tag = new Tag();
 		tag.id = value.id;
 		tag.title = value.title;
+		tag.color = value.color;
 		await tag.save();
 		res.end();
 	})
